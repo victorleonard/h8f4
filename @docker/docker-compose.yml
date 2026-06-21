@@ -1,0 +1,23 @@
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: @docker/Dockerfile
+      args:
+        PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-https://h8f4.fr}
+        PUBLIC_BASE_PATH: ${PUBLIC_BASE_PATH:-}
+        PUBLIC_NOINDEX: ${PUBLIC_NOINDEX:-false}
+    image: h8f4-web:latest
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+    ports:
+      - "${HOST_PORT:-3000}:3000"
+    volumes:
+      # Médias non versionnés — à synchroniser sur le serveur (rsync, scp…)
+      - ../public/live:/app/dist/client/live:ro
+      - ../public/images:/app/dist/client/images:ro
+      - ../public/og-image.png:/app/dist/client/og-image.png:ro

@@ -1,0 +1,25 @@
+node_modules
+dist
+.astro
+.vercel
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+.cursor
+*.log
+npm-debug.log*
+.DS_Store
+
+# Médias volumineux : montés en volume au runtime (voir @docker/docker-compose.yml)
+assets/live-assets
+assets/old_images
+assets/*.jpg
+assets/*.jpeg
+assets/*.mp4
+assets/*.mov
+assets/*.webm
+public/live
+public/images
+public/og-image.png
