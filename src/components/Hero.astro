@@ -1,0 +1,97 @@
+---
+import Brand from './Brand.astro';
+import { heroH1 } from '../data/seo';
+import { heroPhotoPool } from '../data/hero-photos';
+import { withBase } from '../utils/path';
+
+const heroPhotos = heroPhotoPool.map((photo) => ({
+  srcHero: withBase(photo.srcHero),
+  srcsetJpeg: photo.srcsetJpeg
+    .split(', ')
+    .map((entry) => {
+      const [url, descriptor] = entry.split(' ');
+      return `${withBase(url)} ${descriptor}`;
+    })
+    .join(', '),
+  srcsetWebp: photo.srcsetWebp
+    .split(', ')
+    .map((entry) => {
+      const [url, descriptor] = entry.split(' ');
+      return `${withBase(url)} ${descriptor}`;
+    })
+    .join(', '),
+  alt: photo.alt,
+  width: photo.width,
+  height: photo.height,
+}));
+
+const heroFallback = heroPhotos[0];
+---
+
+<section
+  id="hero"
+  class="hero-grain relative flex min-h-[500px] flex-col overflow-hidden"
+>
+  <div class="hero__image-wrap absolute inset-0 overflow-hidden" aria-hidden="true">
+    <picture class="block h-full w-full">
+      <source
+        type="image/webp"
+        srcset={heroFallback.srcsetWebp}
+        sizes="100vw"
+        data-hero-webp
+      />
+      <img
+        src={heroFallback.srcHero}
+        srcset={heroFallback.srcsetJpeg}
+        sizes="100vw"
+        alt=""
+        width={heroFallback.width}
+        height={heroFallback.height}
+        class="hero__image h-full w-full object-cover object-center"
+        data-hero-image
+        fetchpriority="high"
+        decoding="async"
+      />
+    </picture>
+    <script type="application/json" data-hero-photos set:html={JSON.stringify(heroPhotos)} />
+    <script is:inline define:vars={{ heroPhotos }}>
+      (function () {
+        var img = document.querySelector('[data-hero-image]');
+        var webp = document.querySelector('[data-hero-webp]');
+        if (!img || !heroPhotos.length) return;
+        var i = Math.floor(Math.random() * heroPhotos.length);
+        var photo = heroPhotos[i];
+        img.src = photo.srcHero;
+        img.srcset = photo.srcsetJpeg;
+        if (webp) webp.srcset = photo.srcsetWebp;
+        img.setAttribute('data-hero-index', String(i));
+      })();
+    </script>
+  </div>
+  <div
+    class="hero__overlay absolute inset-0 bg-gradient-to-b from-bg/30 via-bg/55 to-bg/95"
+    aria-hidden="true"
+  ></div>
+
+  <div class="hero__brand relative z-10 flex flex-1 items-center justify-center px-4">
+    <div class="container-content text-center">
+      <h1 class="sr-only">{heroH1}</h1>
+      <Brand variant="hero" />
+    </div>
+  </div>
+
+  <div class="hero__actions relative z-10 container-content pb-8 pt-2 text-center md:pb-10">
+    <div class="hero__item hero__item--2 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+      <a href="#contact" class="btn-primary w-full sm:w-auto">Réserver le groupe</a>
+      <a href="#repertoire" class="btn-secondary w-full sm:w-auto">Voir le répertoire</a>
+    </div>
+    <a
+      href="#a-propos"
+      class="hero__item hero__item--3 mt-6 inline-flex cursor-pointer flex-col items-center gap-1 text-sm text-text/80 transition-colors duration-200 hover:text-text md:mt-8"
+      aria-label="Défiler vers le contenu"
+    >
+      <span>Découvrir</span>
+      <svg class="hero__scroll-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </a>
+  </div>
+</section>

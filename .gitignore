@@ -1,0 +1,26 @@
+node_modules/
+dist/
+.astro/
+.env
+.env.local
+.env.*.local
+.DS_Store
+*.log
+npm-debug.log*
+
+# Cursor (config locale)
+.cursor/
+
+# Médias (sources + générés — reconstruits via npm run sync-assets)
+assets/live-assets/
+assets/old_images/
+assets/*.jpg
+assets/*.jpeg
+assets/*.mp4
+assets/*.mov
+assets/*.webm
+PHOTO-*
+VIDEO-*
+public/live/
+public/images/band-photo*
+public/og-image.png

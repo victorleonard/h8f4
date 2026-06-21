@@ -1,0 +1,26 @@
+---
+import { songs } from '../data/repertoire';
+---
+
+<section id="repertoire" class="bg-bg-alt py-16 md:py-24">
+  <div class="container-content">
+    <h2 class="section-title">Répertoire</h2>
+    <div class="section-accent"></div>
+    <p class="mt-4 text-text-muted">{songs.length} reprises rock</p>
+
+    <ul class="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {
+        songs.map((song) => (
+          <li class="song-card">
+            <p class="text-sm font-semibold text-text">{song.title}</p>
+            <p class="mt-0.5 text-xs text-text-muted">{song.artist}</p>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div class="mt-12 text-center">
+      <a href="#contact" class="btn-primary">Réserver le groupe</a>
+    </div>
+  </div>
+</section>

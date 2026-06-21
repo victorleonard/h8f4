@@ -1,0 +1,58 @@
+---
+import { buildMusicGroupSchema, metaDescription, metaTitle, shareImageAlt, shareImageHeight, shareImagePath, shareImageType, shareImageWidth, siteName } from '../data/seo';
+import { withBase } from '../utils/path';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = metaTitle,
+  description = metaDescription,
+} = Astro.props;
+
+const noindex = import.meta.env.PUBLIC_NOINDEX === 'true';
+const siteUrl = (import.meta.env.SITE ?? '').replace(/\/$/, '');
+const canonicalUrl = new URL(Astro.url.pathname, `${siteUrl}/`).href;
+const ogImage = `${siteUrl}${withBase(shareImagePath)}`;
+const musicGroupSchema = buildMusicGroupSchema(siteUrl);
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:url" content={ogImage} />
+    <meta property="og:image:secure_url" content={ogImage} />
+    <meta property="og:image:type" content={shareImageType} />
+    <meta property="og:image:width" content={String(shareImageWidth)} />
+    <meta property="og:image:height" content={String(shareImageHeight)} />
+    <meta property="og:image:alt" content={shareImageAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={shareImageAlt} />
+    <link rel="icon" type="image/svg+xml" href={withBase('/favicon.svg')} />
+    <link rel="icon" type="image/png" sizes="1200x1200" href={withBase('/og-image.png')} />
+    <link rel="apple-touch-icon" sizes="1200x1200" href={withBase('/og-image.png')} />
+    <title>{title}</title>
+    <script type="application/ld+json" set:html={JSON.stringify(musicGroupSchema)} />
+  </head>
+  <body>
+    <slot />
+    <script src="../scripts/main.ts"></script>
+  </body>
+</html>

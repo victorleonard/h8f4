@@ -1,0 +1,27 @@
+---
+import Brand from './Brand.astro';
+import InstagramLink from './InstagramLink.astro';
+import { brandSeo } from '../data/brand';
+import { withBase } from '../utils/path';
+---
+
+<footer class="border-t border-border bg-bg py-8">
+  <div class="container-content flex flex-col items-center gap-6 text-center">
+    <a href={withBase('/')} data-home-link class="cursor-pointer" aria-label={`${brandSeo} — Accueil`}>
+      <Brand variant="footer" />
+    </a>
+
+    <InstagramLink variant="circle" iconClass="h-6 w-6" />
+
+    <p class="text-xs text-text-muted">
+      © {new Date().getFullYear()} {brandSeo} — Groupe de reprises rock
+    </p>
+
+    <a
+      href={withBase('/mentions-legales')}
+      class="cursor-pointer text-xs text-text-muted transition-colors duration-200 hover:text-accent"
+    >
+      Mentions légales
+    </a>
+  </div>
+</footer>

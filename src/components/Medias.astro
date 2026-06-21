@@ -1,0 +1,57 @@
+---
+import { livePhotos, liveVideos } from '../data/live-assets';
+import VideoCard from './VideoCard.astro';
+import PhotoCarousel from './PhotoCarousel.astro';
+import { withBase } from '../utils/path';
+
+const featuredVideos = liveVideos.filter((v) => v.featured);
+const otherVideos = liveVideos.filter((v) => !v.featured);
+---
+
+<section id="medias" class="py-16 md:py-24">
+  <div class="container-content">
+    <h2 class="section-title">Photos &amp; vidéos</h2>
+    <div class="section-accent"></div>
+    <p class="mt-4 text-text-muted">
+      {liveVideos.length} vidéos · {livePhotos.length} photos live
+    </p>
+
+    <h3 class="mt-10 text-lg font-semibold">Vidéos live</h3>
+    <div class="video-grid mt-6">
+      {
+        featuredVideos.map((video) => (
+          <VideoCard
+            src={withBase(video.src)}
+            poster={video.poster ? withBase(video.poster) : null}
+            title={video.title}
+            orientation={video.orientation}
+          />
+        ))
+      }
+    </div>
+
+    {
+      otherVideos.length > 0 && (
+        <>
+          <h3 class="mt-12 text-base font-semibold text-text-muted">Plus de vidéos</h3>
+          <div class="video-grid video-grid--compact mt-6">
+            {otherVideos.map((video) => (
+              <VideoCard
+                src={withBase(video.src)}
+                poster={video.poster ? withBase(video.poster) : null}
+                title={video.title}
+                orientation={video.orientation}
+                compact
+              />
+            ))}
+          </div>
+        </>
+      )
+    }
+
+    <h3 class="mt-12 text-lg font-semibold">Photos live</h3>
+    <div class="mt-6">
+      <PhotoCarousel photos={livePhotos} />
+    </div>
+  </div>
+</section>

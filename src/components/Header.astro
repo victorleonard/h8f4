@@ -1,0 +1,98 @@
+---
+import Brand from './Brand.astro';
+import InstagramLink from './InstagramLink.astro';
+import { brandSeo } from '../data/brand';
+import { withBase } from '../utils/path';
+
+const navItems = [
+  { label: 'Accueil', section: 'hero', href: withBase('/'), home: true },
+  { label: 'Le groupe', section: 'a-propos', href: withBase('/#a-propos') },
+  { label: 'Répertoire', section: 'repertoire', href: withBase('/#repertoire') },
+  { label: 'Médias', section: 'medias', href: withBase('/#medias') },
+  { label: 'Contact', section: 'contact', href: withBase('/#contact') },
+];
+---
+
+<header
+  id="site-header"
+  class="fixed inset-x-0 top-0 z-50 border-b border-border/50 bg-bg/90 backdrop-blur-md transition-all duration-200"
+>
+  <div class="container-content flex h-14 items-center justify-between md:h-[72px]">
+    <a href={withBase('/')} data-home-link class="cursor-pointer shrink-0" aria-label={`${brandSeo} — Accueil`}>
+      <Brand variant="header" />
+    </a>
+
+    <nav class="hidden items-center gap-8 md:flex" aria-label="Navigation principale">
+      {
+        navItems.map((item) => (
+          <a
+            href={item.href}
+            class="nav-link cursor-pointer text-sm font-medium text-text transition-colors duration-200 hover:text-accent"
+            data-section={item.section}
+            {...(item.home ? { 'data-home-link': true } : {})}
+          >
+            {item.label}
+          </a>
+        ))
+      }
+      <InstagramLink class="p-1" iconClass="h-5 w-5" />
+      <a href={withBase('/#contact')} class="btn-primary px-5 py-2.5 text-sm">Réserver</a>
+    </nav>
+
+    <div class="flex items-center gap-1 md:hidden">
+      <InstagramLink class="p-2" iconClass="h-5 w-5" />
+      <button
+      id="menu-toggle"
+      type="button"
+      class="flex cursor-pointer flex-col gap-1.5 p-2"
+      aria-label="Ouvrir le menu"
+      aria-expanded="false"
+      aria-controls="mobile-menu"
+    >
+      <span class="block h-0.5 w-6 bg-text transition-all duration-200"></span>
+      <span class="block h-0.5 w-6 bg-text transition-all duration-200"></span>
+      <span class="block h-0.5 w-6 bg-text transition-all duration-200"></span>
+    </button>
+    </div>
+  </div>
+</header>
+
+<div
+  id="mobile-menu"
+  class="pointer-events-none fixed inset-0 z-[60] flex translate-x-full flex-col bg-bg transition-transform duration-200 md:hidden"
+  aria-hidden="true"
+>
+  <div class="container-content flex h-14 items-center justify-between">
+    <a href={withBase('/')} data-home-link class="cursor-pointer" aria-label={`${brandSeo} — Accueil`}>
+      <Brand variant="header" />
+    </a>
+    <button
+      id="menu-close"
+      type="button"
+      class="cursor-pointer p-2 text-2xl text-text"
+      aria-label="Fermer le menu"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+  </div>
+
+  <nav class="container-content flex flex-1 flex-col gap-8 pt-8" aria-label="Navigation mobile">
+    {
+      navItems.map((item) => (
+        <a
+          href={item.href}
+          class="mobile-nav-link font-display text-2xl text-text transition-colors duration-200 hover:text-accent"
+          {...(item.home ? { 'data-home-link': true } : {})}
+        >
+          {item.label}
+        </a>
+      ))
+    }
+    <a href={withBase('/#contact')} class="btn-primary mt-4 w-full text-center">Réserver le groupe</a>
+    <InstagramLink
+      class="mt-6 font-display text-2xl text-text hover:text-accent"
+      iconClass="h-7 w-7"
+      label="Instagram"
+    />
+  </nav>
+</div>

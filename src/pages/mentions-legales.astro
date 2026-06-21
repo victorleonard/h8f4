@@ -1,0 +1,44 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { withBase } from '../utils/path';
+import '../styles/global.css';
+---
+
+<Layout title="Mentions légales — H8F4" description="Mentions légales du site H8F4.">
+  <Header />
+  <main class="pt-24 pb-16 md:pt-32">
+    <div class="container-content max-w-2xl">
+      <h1 class="section-title">Mentions légales</h1>
+      <div class="section-accent"></div>
+
+      <div class="prose prose-invert mt-10 space-y-8 text-sm text-text-muted">
+        <section>
+          <h2 class="text-base font-semibold text-text">Éditeur du site</h2>
+          <p class="mt-2">H8F4 — Groupe de reprises rock</p>
+          <p>Contact : <a href="mailto:contact@h8f4.fr" class="text-accent hover:underline">contact@h8f4.fr</a></p>
+        </section>
+
+        <section>
+          <h2 class="text-base font-semibold text-text">Données personnelles</h2>
+          <p class="mt-2">
+            Les données collectées via le formulaire de contact (nom, email, téléphone, message) sont
+            utilisées uniquement pour répondre aux demandes de booking. Elles ne sont pas cédées à
+            des tiers.
+          </p>
+        </section>
+
+        <section>
+          <h2 class="text-base font-semibold text-text">Cookies</h2>
+          <p class="mt-2">
+            Ce site n'utilise pas de cookies de tracking.
+          </p>
+        </section>
+      </div>
+
+      <a href={withBase('/')} class="btn-secondary mt-12 inline-flex">Retour à l'accueil</a>
+    </div>
+  </main>
+  <Footer />
+</Layout>

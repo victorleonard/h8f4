@@ -1,0 +1,66 @@
+---
+interface Props {
+  src: string;
+  poster?: string | null;
+  title: string;
+  orientation?: 'portrait' | 'landscape';
+  compact?: boolean;
+}
+
+const { src, poster, title, orientation = 'landscape', compact = false } = Astro.props;
+---
+
+<article
+  class:list={[
+    'video-card overflow-hidden rounded-lg border border-border bg-surface',
+    compact && 'video-card--compact',
+  ]}
+  data-video-card
+  data-orientation={orientation}
+>
+  <div class="video-card__frame bg-black" data-video-frame>
+    {
+      poster && (
+        <button
+          type="button"
+          class="video-card__preview"
+          data-video-preview
+          aria-label={`Lire la vidéo : ${title}`}
+        >
+          <img
+            src={poster}
+            alt=""
+            class="video-card__poster"
+            loading="lazy"
+            decoding="async"
+            draggable="false"
+          />
+          <span class="video-card__play" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z"></path>
+            </svg>
+          </span>
+        </button>
+      )
+    }
+    <video
+      class:list={['video-card__player h-full w-full', poster && 'video-card__player--hidden']}
+      controls
+      preload="none"
+      playsinline
+      poster={poster ?? undefined}
+      title={title}
+      data-video-player
+    >
+      <source src={src} type="video/mp4" />
+    </video>
+  </div>
+  <p
+    class:list={[
+      'text-text-muted',
+      compact ? 'px-3 py-2 text-xs' : 'px-4 py-3 text-sm',
+    ]}
+  >
+    {title}
+  </p>
+</article>

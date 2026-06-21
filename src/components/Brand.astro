@@ -1,0 +1,44 @@
+---
+import Logo from './Logo.astro';
+import { brandFull, brandShort, brandTagline } from '../data/brand';
+
+interface Props {
+  variant?: 'hero' | 'header' | 'footer';
+  class?: string;
+}
+
+const { variant = 'header', class: className = '' } = Astro.props;
+
+const logoClass = {
+  hero: 'text-[2.75rem] sm:text-6xl md:text-7xl',
+  header: 'text-xl md:text-2xl',
+  footer: 'text-xl opacity-80',
+}[variant];
+---
+
+{
+  variant === 'hero' ? (
+    <div class:list={['hero-brand flex flex-col items-center text-center', className]}>
+      <div class="hero-brand__stage">
+        <p class="hero-brand__short">
+          <span class="hero-brand__short-inner logo-mark">{brandShort}</span>
+        </p>
+        <p class="hero-brand__long">
+          <span class="hero-brand__long-inner">{brandFull}</span>
+        </p>
+      </div>
+      <p class="hero-brand__tagline brand-tagline mt-3 max-w-md text-[15px] font-medium text-text/90 sm:mt-3.5 md:text-base">
+        {brandTagline}
+      </p>
+    </div>
+  ) : variant === 'footer' ? (
+    <div class:list={['flex flex-col items-center text-center', className]}>
+      <Logo class={logoClass} />
+      <p class="brand-full mt-2 text-[10px] uppercase tracking-[0.22em] text-text-muted">
+        {brandFull}
+      </p>
+    </div>
+  ) : (
+    <Logo class:list={[logoClass, className]} />
+  )
+}

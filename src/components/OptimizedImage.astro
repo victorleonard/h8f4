@@ -1,0 +1,115 @@
+---
+import { withBase } from '../utils/path';
+
+export type ImageVariant = 'thumb' | 'slide' | 'about' | 'hero' | 'lightbox';
+
+interface PhotoLike {
+  src: string;
+  srcWebp: string;
+  srcLarge: string;
+  srcLargeWebp: string;
+  srcHero: string;
+  srcHeroWebp: string;
+  srcThumb: string;
+  srcThumbWebp: string;
+  width: number;
+  height: number;
+  srcsetWebp: string;
+  srcsetJpeg: string;
+  alt: string;
+}
+
+interface Props {
+  photo: PhotoLike;
+  variant?: ImageVariant;
+  loading?: 'lazy' | 'eager';
+  fetchpriority?: 'high' | 'low' | 'auto';
+  class?: string;
+  draggable?: boolean;
+  decoding?: 'async' | 'sync' | 'auto';
+}
+
+const {
+  photo,
+  variant = 'slide',
+  loading = 'lazy',
+  fetchpriority,
+  class: className = '',
+  draggable,
+  decoding = 'async',
+} = Astro.props;
+
+const baseSrcset = (srcset: string) =>
+  srcset
+    .split(', ')
+    .map((entry) => {
+      const [url, descriptor] = entry.split(' ');
+      return `${withBase(url)} ${descriptor}`;
+    })
+    .join(', ');
+
+const thumbWidth = Math.min(photo.width, 400);
+const thumbHeight = Math.round((thumbWidth / photo.width) * photo.height);
+
+const variantConfig = {
+  thumb: {
+    jpeg: withBase(photo.srcThumb),
+    webpSrcset: `${withBase(photo.srcThumbWebp)} ${thumbWidth}w`,
+    jpegSrcset: `${withBase(photo.srcThumb)} ${thumbWidth}w`,
+    sizes: '150px',
+    width: thumbWidth,
+    height: thumbHeight,
+  },
+  slide: {
+    jpeg: withBase(photo.src),
+    webpSrcset: baseSrcset(photo.srcsetWebp),
+    jpegSrcset: baseSrcset(photo.srcsetJpeg),
+    sizes: '100vw',
+    width: photo.width,
+    height: photo.height,
+  },
+  about: {
+    jpeg: withBase(photo.src),
+    webpSrcset: baseSrcset(photo.srcsetWebp),
+    jpegSrcset: baseSrcset(photo.srcsetJpeg),
+    sizes: '(max-width: 768px) 100vw, 50vw',
+    width: photo.width,
+    height: photo.height,
+  },
+  hero: {
+    jpeg: withBase(photo.srcHero),
+    webpSrcset: baseSrcset(photo.srcsetWebp),
+    jpegSrcset: baseSrcset(photo.srcsetJpeg),
+    sizes: '100vw',
+    width: photo.width,
+    height: photo.height,
+  },
+  lightbox: {
+    jpeg: withBase(photo.srcLarge),
+    webpSrcset: baseSrcset(photo.srcsetWebp),
+    jpegSrcset: baseSrcset(photo.srcsetJpeg),
+    sizes: '90vw',
+    width: photo.width,
+    height: photo.height,
+  },
+} as const;
+
+const config = variantConfig[variant];
+---
+
+<picture>
+  <source type="image/webp" srcset={config.webpSrcset} sizes={config.sizes} />
+  <img
+    src={config.jpeg}
+    srcset={config.jpegSrcset}
+    sizes={config.sizes}
+    alt={photo.alt}
+    width={config.width}
+    height={config.height}
+    class={className}
+    loading={loading}
+    decoding={decoding}
+    fetchpriority={fetchpriority}
+    draggable={draggable}
+  />
+</picture>

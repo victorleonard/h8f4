@@ -1,0 +1,122 @@
+---
+import { serviceAreaPhrase, serviceRegionIn } from '../data/seo';
+
+const formspreeId = import.meta.env.PUBLIC_FORMSPREE_ID ?? '';
+const formAction = formspreeId ? `https://formspree.io/f/${formspreeId}` : undefined;
+---
+
+<section id="contact" class="bg-bg-alt py-16 md:py-24">
+  <div class="container-content">
+    <h2 class="section-title">Réserver le groupe</h2>
+    <div class="section-accent"></div>
+
+    <div class="mt-10 grid gap-12 md:grid-cols-2 md:gap-16">
+      <div>
+        <p class="text-[15px] leading-relaxed text-text-muted md:text-base">
+          Groupe de reprises rock disponible {serviceRegionIn} pour festivals, bars,
+          événements privés et corporate. Nous nous déplaçons {serviceAreaPhrase}.
+        </p>
+        <p class="mt-4 text-[15px] leading-relaxed text-text-muted md:text-base">
+          Contactez-nous pour discuter de votre projet et réserver le groupe.
+        </p>
+      </div>
+
+      <div class="contact-form" data-contact-form>
+        <form
+          class="contact-form__fields space-y-4"
+          method="POST"
+          action={formAction}
+          data-form
+        >
+          {!formAction && (
+            <p class="rounded-lg border border-border bg-surface p-4 text-sm text-text-muted">
+              Configurez <code class="text-accent">PUBLIC_FORMSPREE_ID</code> dans un fichier
+              <code class="text-accent">.env</code> pour activer l'envoi du formulaire.
+            </p>
+          )}
+
+          <div>
+            <label for="name" class="mb-1.5 block text-sm font-medium">Nom *</label>
+            <input class="input-field" type="text" id="name" name="name" required minlength="2" autocomplete="name" />
+          </div>
+
+          <div>
+            <label for="email" class="mb-1.5 block text-sm font-medium">Email *</label>
+            <input class="input-field" type="email" id="email" name="email" required autocomplete="email" />
+          </div>
+
+          <div>
+            <label for="phone" class="mb-1.5 block text-sm font-medium">Téléphone</label>
+            <input class="input-field" type="tel" id="phone" name="phone" autocomplete="tel" />
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="date" class="mb-1.5 block text-sm font-medium">Date souhaitée</label>
+              <input class="input-field" type="date" id="date" name="date" />
+            </div>
+            <div>
+              <label for="location" class="mb-1.5 block text-sm font-medium">Lieu / ville</label>
+              <input class="input-field" type="text" id="location" name="location" />
+            </div>
+          </div>
+
+          <div>
+            <label for="event-type" class="mb-1.5 block text-sm font-medium">Type d'événement</label>
+            <select class="input-field cursor-pointer" id="event-type" name="event-type">
+              <option value="">— Choisir —</option>
+              <option value="bar">Bar / Pub</option>
+              <option value="festival">Festival</option>
+              <option value="prive">Événement privé</option>
+              <option value="corporate">Corporate</option>
+              <option value="autre">Autre</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="message" class="mb-1.5 block text-sm font-medium">Message *</label>
+            <textarea
+              class="input-field min-h-[120px] resize-y"
+              id="message"
+              name="message"
+              required
+              minlength="10"
+              rows="4"
+            ></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary w-full" data-submit data-submit-label="Envoyer la demande">
+            Envoyer la demande
+          </button>
+        </form>
+
+        <div class="contact-form__feedback hidden" data-form-success role="status" aria-live="polite" tabindex="-1">
+          <div class="contact-form__feedback-card">
+            <div class="contact-form__feedback-icon contact-form__feedback-icon--success" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+            <h3 class="contact-form__feedback-title">Demande envoyée</h3>
+            <p class="contact-form__feedback-text">
+              Merci&nbsp;! Nous avons bien reçu votre message et vous recontactons rapidement.
+            </p>
+          </div>
+        </div>
+
+        <div class="contact-form__feedback hidden" data-form-error role="alert" aria-live="assertive" tabindex="-1">
+          <div class="contact-form__feedback-card">
+            <div class="contact-form__feedback-icon contact-form__feedback-icon--error" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </div>
+            <h3 class="contact-form__feedback-title">Envoi impossible</h3>
+            <p class="contact-form__feedback-text">
+              Une erreur est survenue. Vérifiez votre connexion et réessayez.
+            </p>
+            <button type="button" class="btn-secondary mt-6" data-form-retry>
+              Réessayer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

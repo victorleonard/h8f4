@@ -1,0 +1,16 @@
+---
+import { brandShort } from '../data/brand';
+
+interface Props {
+  class?: string;
+}
+
+const { class: className = 'text-2xl' } = Astro.props;
+---
+
+<span
+  class:list={['logo-mark block font-display leading-none tracking-wide text-text', className]}
+  aria-hidden="true"
+>
+  {brandShort}
+</span>

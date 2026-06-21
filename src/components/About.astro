@@ -1,0 +1,61 @@
+---
+import OptimizedImage from './OptimizedImage.astro';
+import { aboutPhoto } from "../data/live-assets";
+import { brandSeo } from "../data/brand";
+import { serviceAreaPhrase, serviceRegionIn } from "../data/seo";
+---
+
+<section id="a-propos" class="py-16 md:py-24">
+  <div class="container-content">
+    <h2 class="section-title">Le groupe</h2>
+    <div class="section-accent"></div>
+
+    <div class="mt-10 grid items-center gap-10 md:grid-cols-2 md:gap-16">
+      {
+        aboutPhoto && (
+          <OptimizedImage
+            photo={aboutPhoto}
+            variant="about"
+            loading="lazy"
+            class="aspect-[4/3] w-full rounded-lg object-cover object-center grayscale contrast-[1.05]"
+          />
+        )
+      }
+      <div>
+        <p class="text-[15px] leading-relaxed text-text-muted md:text-base">
+          Nous sommes {brandSeo}, un quatuor rock / hard rock basé {serviceRegionIn}.
+          Depuis 6 ans, nous jouons un set de reprises brassant les hits rock des
+          années 60 jusqu'à aujourd'hui.
+        </p>
+        <p class="mt-4 text-[15px] leading-relaxed text-text-muted md:text-base">
+          {brandSeo}, c'est quoi&nbsp;? Une parenthèse rock, riche en riffs,
+          soucieuse d'offrir au public un moment plein d'énergie.
+        </p>
+        <p class="mt-4 text-[15px] leading-relaxed text-text-muted md:text-base">
+          Nous nous déplaçons {serviceAreaPhrase}.
+        </p>
+
+        <div class="mt-8 grid grid-cols-3 gap-4">
+          <div
+            class="rounded-lg border border-border bg-surface p-4 text-center"
+          >
+            <p class="font-display text-2xl text-accent">26</p>
+            <p class="mt-1 text-xs text-text-muted">titres</p>
+          </div>
+          <div
+            class="rounded-lg border border-border bg-surface p-4 text-center"
+          >
+            <p class="font-display text-2xl text-accent">100%</p>
+            <p class="mt-1 text-xs text-text-muted">rock</p>
+          </div>
+          <div
+            class="rounded-lg border border-border bg-surface p-4 text-center"
+          >
+            <p class="font-display text-2xl text-accent">Live</p>
+            <p class="mt-1 text-xs text-text-muted">only</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
