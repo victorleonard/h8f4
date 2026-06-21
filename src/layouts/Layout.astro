@@ -5,14 +5,17 @@ import { withBase } from '../utils/path';
 interface Props {
   title?: string;
   description?: string;
+  /** Page autonome sans navigation du site (ex. /propal). */
+  minimal?: boolean;
 }
 
 const {
   title = metaTitle,
   description = metaDescription,
+  minimal = false,
 } = Astro.props;
 
-const noindex = import.meta.env.PUBLIC_NOINDEX === 'true';
+const noindex = import.meta.env.PUBLIC_NOINDEX === 'true' || minimal;
 const siteUrl = (import.meta.env.SITE ?? '').replace(/\/$/, '');
 const canonicalUrl = new URL(Astro.url.pathname, `${siteUrl}/`).href;
 const ogImage = `${siteUrl}${withBase(shareImagePath)}`;
@@ -49,10 +52,67 @@ const musicGroupSchema = buildMusicGroupSchema(siteUrl);
     <link rel="icon" type="image/png" sizes="1200x1200" href={withBase('/og-image.png')} />
     <link rel="apple-touch-icon" sizes="1200x1200" href={withBase('/og-image.png')} />
     <title>{title}</title>
-    <script type="application/ld+json" set:html={JSON.stringify(musicGroupSchema)} />
+    <script is:inline>
+      (function () {
+        var STORAGE_KEY = "h8f4-theme";
+
+        function getTheme() {
+          var current = document.documentElement.getAttribute("data-theme");
+          if (current === "light" || current === "dark") return current;
+          return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        }
+
+        function syncThemeToggleButtons() {
+          var isDark = getTheme() === "dark";
+          var buttons = document.querySelectorAll("[data-theme-toggle]");
+          for (var i = 0; i < buttons.length; i++) {
+            var button = buttons[i];
+            button.setAttribute(
+              "aria-label",
+              isDark ? "Activer le mode clair" : "Activer le mode sombre"
+            );
+            button.setAttribute("aria-pressed", isDark ? "true" : "false");
+          }
+        }
+
+        function applyTheme(theme) {
+          document.documentElement.setAttribute("data-theme", theme);
+          document.documentElement.style.colorScheme = theme;
+          try {
+            localStorage.setItem(STORAGE_KEY, theme);
+          } catch (e) {}
+          syncThemeToggleButtons();
+        }
+
+        window.h8f4ToggleTheme = function (event) {
+          if (event && event.preventDefault) event.preventDefault();
+          if (event && event.stopPropagation) event.stopPropagation();
+          applyTheme(getTheme() === "dark" ? "light" : "dark");
+        };
+
+        var stored = null;
+        try {
+          stored = localStorage.getItem(STORAGE_KEY);
+        } catch (e) {}
+        applyTheme(
+          stored === "light" || stored === "dark"
+            ? stored
+            : window.matchMedia("(prefers-color-scheme: light)").matches
+              ? "light"
+              : "dark"
+        );
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", syncThemeToggleButtons);
+        } else {
+          syncThemeToggleButtons();
+        }
+      })();
+    </script>
+    {minimal ? null : <script type="application/ld+json" set:html={JSON.stringify(musicGroupSchema)} />}
   </head>
   <body>
     <slot />
-    <script src="../scripts/main.ts"></script>
+    {minimal ? null : <script src="../scripts/main.ts"></script>}
   </body>
 </html>

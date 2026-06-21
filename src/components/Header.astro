@@ -1,6 +1,7 @@
 ---
 import Brand from './Brand.astro';
 import InstagramLink from './InstagramLink.astro';
+import ThemeToggle from './ThemeToggle.astro';
 import { brandSeo } from '../data/brand';
 import { withBase } from '../utils/path';
 
@@ -36,10 +37,12 @@ const navItems = [
         ))
       }
       <InstagramLink class="p-1" iconClass="h-5 w-5" />
+      <ThemeToggle />
       <a href={withBase('/#contact')} class="btn-primary px-5 py-2.5 text-sm">Réserver</a>
     </nav>
 
     <div class="flex items-center gap-1 md:hidden">
+      <ThemeToggle />
       <InstagramLink class="p-2" iconClass="h-5 w-5" />
       <button
       id="menu-toggle"
@@ -89,6 +92,10 @@ const navItems = [
       ))
     }
     <a href={withBase('/#contact')} class="btn-primary mt-4 w-full text-center">Réserver le groupe</a>
+    <div class="mt-6 flex items-center gap-3">
+      <ThemeToggle />
+      <span class="text-sm text-text-muted">Thème clair / sombre</span>
+    </div>
     <InstagramLink
       class="mt-6 font-display text-2xl text-text hover:text-accent"
       iconClass="h-7 w-7"

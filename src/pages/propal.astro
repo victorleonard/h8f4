@@ -1,0 +1,264 @@
+---
+import type { Robots } from 'astro';
+import Layout from '../layouts/Layout.astro';
+import Brand from '../components/Brand.astro';
+import ThemeToggle from '../components/ThemeToggle.astro';
+import { withBase } from '../utils/path';
+import { brandSeo } from '../data/brand';
+import '../styles/global.css';
+
+export const robots: Robots = {
+  index: false,
+  follow: false,
+};
+
+const pageTitle = 'Propositions de titres — H8F4';
+const pageDescription =
+  'Espace interne du groupe pour proposer et voter des reprises à ajouter au répertoire.';
+---
+
+<Layout title={pageTitle} description={pageDescription} minimal>
+  <div class="propal-page">
+    <header class="propal-page__bar">
+      <div class="container-content flex items-center justify-between gap-3">
+        <a href={withBase('/')} class="cursor-pointer shrink-0" aria-label={`${brandSeo} — Accueil`}>
+          <Brand variant="header" />
+        </a>
+        <div class="flex items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            class="propal-member-nav hidden"
+            data-member-change
+            aria-label="Changer de compte"
+          >
+            <span class="propal-member-nav__avatar" data-member-avatar aria-hidden="true"></span>
+          </button>
+          <ThemeToggle />
+          <a
+            href={withBase('/')}
+            class="propal-page__back inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg px-2 text-sm text-text-muted transition-colors duration-200 hover:text-accent sm:min-h-0 sm:min-w-0 sm:px-0"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+            <span class="hidden sm:inline">Retour au site</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="propal-page__main">
+      <section class="py-6 sm:py-10 md:py-16">
+        <div class="container-content max-w-3xl" data-propal-app>
+          <h1 class="section-title text-2xl sm:text-[28px] md:text-4xl">Propositions de titres</h1>
+          <div class="section-accent"></div>
+
+          <div class="mt-8" data-member-step>
+            <div
+              class="rounded-lg border border-accent/30 bg-surface p-5"
+              data-member-banner
+            >
+              <p class="text-sm font-medium text-text">Qui êtes-vous&nbsp;?</p>
+              <p class="mt-1 text-sm text-text-muted">
+                Touchez votre prénom pour accéder aux propositions.
+              </p>
+              <div class="propal-member-grid" data-member-picker role="listbox" aria-label="Comptes membres">
+                <p class="text-sm text-text-muted sm:col-span-2">Chargement des comptes…</p>
+              </div>
+            </div>
+          </div>
+
+          <p class="mt-4 hidden text-sm text-success" data-propal-status role="status" aria-live="polite"></p>
+          <p class="mt-4 hidden text-sm text-error" data-propal-error role="alert" aria-live="assertive"></p>
+
+          <div class="hidden" data-propal-content>
+            <div class="propal-sticky-nav">
+            <div class="propal-view-tabs mt-6 sm:mt-8" role="tablist" aria-label="Sections">
+              <button
+                type="button"
+                class="propal-view-tab propal-view-tab--active"
+                role="tab"
+                aria-selected="true"
+                aria-controls="propal-view-pending"
+                id="propal-tab-pending"
+                data-propal-view="pending"
+              >
+                À noter
+                <span class="propal-view-tab__count" data-pending-count>0</span>
+              </button>
+              <button
+                type="button"
+                class="propal-view-tab"
+                role="tab"
+                aria-selected="false"
+                aria-controls="propal-view-ranking"
+                id="propal-tab-ranking"
+                data-propal-view="ranking"
+              >
+                Classement
+                <span class="propal-view-tab__count" data-ranking-count>0</span>
+              </button>
+              <button
+                type="button"
+                class="propal-view-tab"
+                role="tab"
+                aria-selected="false"
+                aria-controls="propal-view-propose"
+                id="propal-tab-propose"
+                data-propal-view="propose"
+              >
+                Proposer
+              </button>
+            </div>
+            </div>
+
+            <div
+              id="propal-view-pending"
+              role="tabpanel"
+              aria-labelledby="propal-tab-pending"
+              data-propal-view-pending
+            >
+              <p class="mt-4 text-sm text-text-muted" data-pending-summary>
+                Chargement…
+              </p>
+
+              <p class="propal-vote-hint mt-4 text-xs sm:text-sm">
+                Notez de <strong class="text-text">1 à 5 étoiles</strong>. Modifiable à tout moment.
+              </p>
+
+              <div class="mt-5 space-y-2" data-pending-list>
+                <p class="text-sm text-text-muted">Chargement des titres…</p>
+              </div>
+            </div>
+
+            <div
+              id="propal-view-ranking"
+              class="hidden"
+              role="tabpanel"
+              aria-labelledby="propal-tab-ranking"
+              data-propal-view-ranking
+            >
+              <p class="mt-4 text-sm text-text-muted" data-vote-summary>
+                Tri par note moyenne
+              </p>
+
+              <div class="propal-list-toolbar">
+                <div class="propal-filter-chips" role="group" aria-label="Filtres rapides">
+                  <button type="button" class="propal-filter-chip propal-filter-chip--active" data-list-filter="all">
+                    Tous
+                  </button>
+                  <button type="button" class="propal-filter-chip" data-list-filter="rated">
+                    Mes notes
+                  </button>
+                  <button type="button" class="propal-filter-chip" data-list-filter="mine">
+                    Mes titres
+                  </button>
+                </div>
+              </div>
+
+              <p class="mt-4 hidden text-sm text-text-muted" data-list-filter-summary></p>
+
+              <div class="mt-4 space-y-2" data-proposal-list>
+                <p class="text-sm text-text-muted">Chargement des propositions…</p>
+              </div>
+            </div>
+
+            <div
+              id="propal-view-propose"
+              class="hidden"
+              role="tabpanel"
+              aria-labelledby="propal-tab-propose"
+              data-propal-view-propose
+            >
+              <div class="propal-proposal-panel mt-6">
+                <h2 class="font-display text-lg text-text">Proposer un titre</h2>
+                <p class="mt-1 text-sm text-text-muted">
+                  Recherchez un morceau, sélectionnez-le dans les résultats, puis confirmez.
+                </p>
+
+                <div class="propal-proposal-search mt-5" data-song-search>
+                  <label for="propal-search" class="sr-only">Rechercher un titre ou un artiste</label>
+                  <div class="propal-proposal-search__field">
+                    <svg class="propal-proposal-search__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <input
+                      class="propal-proposal-search__input"
+                      type="search"
+                      id="propal-search"
+                      name="search"
+                      autocomplete="off"
+                      placeholder="Rechercher un titre ou un artiste…"
+                      data-song-search-input
+                    />
+                  </div>
+                  <div
+                    class="propal-search-results hidden"
+                    data-song-search-results
+                    role="listbox"
+                    aria-label="Résultats de recherche"
+                  ></div>
+                </div>
+
+                <form class="hidden mt-5" data-proposal-form>
+                  <div class="propal-proposal-preview">
+                    <div data-proposal-preview-artwork></div>
+                    <div class="min-w-0 flex-1">
+                      <p class="text-xs font-medium uppercase tracking-wide text-accent">Titre sélectionné</p>
+                      <p class="mt-1 text-lg font-semibold text-text" data-proposal-preview-title></p>
+                      <p class="mt-0.5 text-sm text-text-muted" data-proposal-preview-artist></p>
+                      <p class="mt-1 text-xs text-text-muted" data-proposal-preview-album></p>
+                    </div>
+                  </div>
+                  <input type="hidden" name="title" data-proposal-title />
+                  <input type="hidden" name="artist" data-proposal-artist />
+                  <input type="hidden" name="artworkUrl" data-proposal-artwork />
+                  <div class="mt-5 flex flex-col gap-3 sm:flex-row">
+                    <button type="submit" class="btn-primary w-full sm:w-auto" data-proposal-submit>
+                      Proposer ce titre
+                    </button>
+                    <button type="button" class="btn-secondary w-full sm:w-auto" data-proposal-clear>
+                      Choisir un autre titre
+                    </button>
+                  </div>
+                </form>
+
+                <details class="propal-proposal-manual mt-6">
+                  <summary class="cursor-pointer text-sm font-medium text-text-muted transition-colors duration-200 hover:text-accent">
+                    Saisie manuelle (sans recherche)
+                  </summary>
+                  <form class="mt-4 space-y-4 rounded-lg border border-border bg-bg-alt p-4" data-proposal-manual-form>
+                    <div>
+                      <label for="propal-manual-title" class="mb-1.5 block text-sm font-medium">Titre *</label>
+                      <input
+                        class="input-field"
+                        type="text"
+                        id="propal-manual-title"
+                        required
+                        minlength="2"
+                        maxlength="120"
+                        placeholder="ex. Creep"
+                        data-proposal-manual-title
+                      />
+                    </div>
+                    <div>
+                      <label for="propal-manual-artist" class="mb-1.5 block text-sm font-medium">Artiste / groupe d'origine</label>
+                      <input
+                        class="input-field"
+                        type="text"
+                        id="propal-manual-artist"
+                        maxlength="120"
+                        placeholder="ex. Radiohead"
+                        data-proposal-manual-artist
+                      />
+                    </div>
+                    <button type="submit" class="btn-secondary w-full sm:w-auto" data-proposal-manual-submit>
+                      Proposer sans pochette
+                    </button>
+                  </form>
+                </details>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../scripts/propal.ts"></script>
+</Layout>

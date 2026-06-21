@@ -5,6 +5,27 @@
 @tailwind utilities;
 
 @layer base {
+  :root,
+  html[data-theme="dark"] {
+    color-scheme: dark;
+    --color-bg: 10 10 10;
+    --color-bg-alt: 18 18 18;
+    --color-surface: 26 26 26;
+    --color-border: 42 42 42;
+    --color-text: 245 245 245;
+    --color-text-muted: 160 160 160;
+  }
+
+  html[data-theme="light"] {
+    color-scheme: light;
+    --color-bg: 250 250 250;
+    --color-bg-alt: 240 240 240;
+    --color-surface: 255 255 255;
+    --color-border: 229 229 229;
+    --color-text: 23 23 23;
+    --color-text-muted: 115 115 115;
+  }
+
   html {
     scroll-behavior: smooth;
   }
@@ -24,8 +45,19 @@
   }
 
   body {
-    @apply bg-bg font-body text-text antialiased;
+    @apply bg-bg font-body text-text antialiased transition-colors duration-200;
   }
+}
+
+/* Icônes thème — CSS brut (Tailwind altère les sélecteurs [data-theme]). */
+html[data-theme="dark"] .theme-toggle__icon--sun,
+html[data-theme="light"] .theme-toggle__icon--moon {
+  display: block;
+}
+
+html[data-theme="dark"] .theme-toggle__icon--moon,
+html[data-theme="light"] .theme-toggle__icon--sun {
+  display: none;
 }
 
 @layer components {
@@ -55,6 +87,332 @@
 
   .container-content {
     @apply mx-auto w-full max-w-content px-4 md:px-6 lg:px-8;
+  }
+
+  .theme-toggle {
+    @apply inline-flex cursor-pointer items-center justify-center rounded-lg border border-border bg-surface p-2 text-text transition-colors duration-200 hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
+  .theme-toggle__icon {
+    @apply h-5 w-5;
+  }
+
+  /* Page propal — mobile-first (usage principal sur téléphone) */
+  .propal-page {
+    @apply min-h-dvh bg-bg;
+  }
+
+  .propal-page__main {
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  }
+
+  .propal-page__bar {
+    @apply sticky top-0 z-30 border-b border-border/50 bg-bg/95 py-3 backdrop-blur-md sm:py-5;
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+  }
+
+  .propal-page__back {
+    @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
+  .propal-member-grid {
+    @apply mt-4 grid gap-3 sm:grid-cols-2;
+  }
+
+  .propal-member-card {
+    @apply flex min-h-[3.25rem] cursor-pointer items-center gap-3 rounded-lg border border-border bg-bg-alt px-4 py-4 text-left transition-colors duration-200 hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:py-3.5;
+  }
+
+  .propal-member-card--selected {
+    @apply border-accent bg-accent/10;
+  }
+
+  .propal-member-card__avatar {
+    @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface font-display text-sm text-accent;
+  }
+
+  .propal-member-nav {
+    @apply inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-accent/40 bg-accent/10 transition-colors duration-200 hover:border-accent hover:bg-accent/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
+  .propal-member-nav__avatar {
+    @apply flex h-9 w-9 items-center justify-center rounded-full bg-surface font-display text-sm font-semibold text-accent;
+  }
+
+  .propal-vote-hint {
+    @apply rounded-lg border border-border bg-bg-alt px-3 py-2.5 text-text-muted sm:px-4 sm:py-3;
+  }
+
+  .propal-sticky-nav {
+    @apply sticky top-[calc(3.25rem+env(safe-area-inset-top))] z-20 -mx-4 border-b border-border/60 bg-bg/95 px-4 py-2 backdrop-blur-md sm:static sm:mx-0 sm:border-b-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none;
+  }
+
+  .propal-view-tabs {
+    @apply flex gap-1 rounded-lg border border-border bg-bg-alt p-1 sm:gap-2;
+  }
+
+  .propal-view-tab {
+    @apply inline-flex min-h-11 flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-md px-1.5 py-2 text-xs font-medium text-text-muted transition-colors duration-200 hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-0 sm:flex-row sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm;
+  }
+
+  .propal-view-tab--active {
+    @apply bg-surface text-text shadow-sm;
+  }
+
+  .propal-view-tab__count {
+    @apply inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-bg px-1.5 py-0.5 text-xs font-semibold text-text-muted;
+  }
+
+  .propal-view-tab--active .propal-view-tab__count {
+    @apply bg-accent/15 text-accent;
+  }
+
+  .propal-view-tab--attention:not(.propal-view-tab--active) {
+    @apply text-accent;
+  }
+
+  .propal-view-tab--attention:not(.propal-view-tab--active) .propal-view-tab__count {
+    @apply bg-accent/15 text-accent;
+  }
+
+  .propal-list-toolbar {
+    @apply mt-4 space-y-3 border-b border-border/60 pb-4 sm:sticky sm:top-0 sm:z-10 sm:mt-6 sm:bg-bg/95 sm:py-4 sm:backdrop-blur-md;
+  }
+
+  .propal-pending-list {
+    @apply space-y-2;
+  }
+
+  .propal-pending-card {
+    @apply flex flex-col overflow-hidden rounded-lg border border-border bg-surface sm:flex-row sm:items-stretch;
+  }
+
+  .propal-pending-card__main {
+    @apply flex min-w-0 flex-1 items-start gap-2.5 p-2.5 sm:gap-3 sm:p-3;
+  }
+
+  .propal-pending-card .propal-rating {
+    @apply border-t border-border bg-bg-alt/20 px-2.5 py-2 sm:flex sm:w-auto sm:min-w-[9.5rem] sm:shrink-0 sm:items-center sm:justify-center sm:border-l sm:border-t-0 sm:bg-transparent sm:px-3 sm:py-2;
+  }
+
+  .propal-filter-chips {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .propal-filter-chip {
+    @apply min-h-10 cursor-pointer rounded-full border border-border bg-surface px-3.5 py-2 text-sm font-medium text-text-muted transition-colors duration-200 hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-0 sm:px-3 sm:py-1.5 sm:text-xs;
+  }
+
+  .propal-filter-chip--active {
+    @apply border-accent bg-accent/10 text-accent;
+  }
+
+  .propal-filter-chip:disabled {
+    @apply cursor-not-allowed opacity-40 hover:border-border hover:text-text-muted;
+  }
+
+  .propal-vote-card {
+    @apply relative overflow-hidden rounded-lg border border-border bg-surface transition-colors duration-200;
+  }
+
+  .propal-vote-card--mine {
+    @apply border-accent/50 ring-1 ring-accent/20;
+  }
+
+  .propal-vote-card__mobile-meta {
+    @apply flex items-center gap-2 border-b border-border bg-bg-alt/50 px-3 py-1.5 sm:hidden;
+  }
+
+  .propal-vote-card__meta-notes {
+    @apply ml-auto text-[11px] text-text-muted;
+  }
+
+  .propal-vote-card__layout {
+    @apply flex items-stretch;
+  }
+
+  .propal-vote-card__aside {
+    @apply hidden w-14 shrink-0 flex-col items-center justify-center border-r border-border bg-bg-alt/50 py-3 sm:flex;
+  }
+
+  .propal-vote-card__content {
+    @apply flex min-w-0 flex-1 flex-col sm:flex-row sm:items-start;
+  }
+
+  .propal-vote-card__info {
+    @apply flex min-w-0 flex-1 gap-2.5 p-2.5 sm:gap-4 sm:p-4;
+  }
+
+  .propal-vote-card__actions {
+    @apply flex min-w-0 w-full flex-col gap-1 border-t border-border bg-bg-alt/20 px-2.5 py-2 sm:w-auto sm:min-w-[9.5rem] sm:shrink-0 sm:gap-1.5 sm:border-t-0 sm:bg-transparent sm:px-4 sm:pb-4 sm:pt-4;
+  }
+
+  .propal-vote-card__rank {
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bg font-display text-xs text-text-muted sm:h-10 sm:w-10 sm:text-sm;
+  }
+
+  .propal-vote-card__rank--top {
+    @apply bg-accent/15 text-accent;
+  }
+
+  .propal-vote-card__rank--empty {
+    @apply border-transparent bg-transparent;
+  }
+
+  .propal-vote-card__vote-btn {
+    @apply inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-border bg-bg px-4 py-2.5 text-sm font-semibold text-text transition-colors duration-200 hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border disabled:hover:text-text;
+  }
+
+  .propal-vote-card__unvote-btn {
+    @apply inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-error/50 bg-error/10 px-4 py-2.5 text-sm font-semibold text-error transition-colors duration-200 hover:border-error hover:bg-error/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-error disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .propal-vote-card__delete-btn {
+    @apply inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-border bg-bg px-3 py-2 text-xs font-medium text-text-muted transition-colors duration-200 hover:border-error/50 hover:bg-error/10 hover:text-error focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-error disabled:cursor-not-allowed disabled:opacity-40 sm:py-2.5 sm:text-sm;
+  }
+
+  .propal-vote-card__vote-btn:disabled {
+    @apply opacity-40;
+  }
+
+  .propal-rating-chip {
+    @apply inline-flex rounded-full border border-border bg-bg px-2 py-px text-[11px] text-text;
+  }
+
+  .propal-rating-chip--me {
+    @apply border-accent/40 bg-accent/10 font-medium text-accent;
+  }
+
+  .propal-rating-average {
+    @apply font-display text-xl leading-none text-accent sm:text-2xl;
+  }
+
+  .propal-rating-average--inline {
+    @apply text-lg;
+  }
+
+  .propal-rating {
+    @apply flex w-full flex-col items-stretch gap-1;
+  }
+
+  .propal-rating--compact {
+    @apply gap-0.5;
+  }
+
+  .propal-rating__row {
+    @apply flex items-center gap-2;
+  }
+
+  .propal-rating__label {
+    @apply shrink-0 text-[10px] font-medium uppercase tracking-wide text-text-muted;
+  }
+
+  .propal-rating__stars {
+    @apply flex flex-1 items-center justify-end gap-0;
+  }
+
+  .propal-rating__star {
+    @apply flex h-8 w-8 cursor-pointer items-center justify-center rounded text-lg leading-none text-border transition-colors duration-200 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 sm:h-7 sm:w-7 sm:text-base;
+  }
+
+  .propal-rating__star--active {
+    @apply text-accent;
+  }
+
+  .propal-rating__clear {
+    @apply self-end cursor-pointer py-0.5 text-[11px] text-text-muted transition-colors duration-200 hover:text-error;
+  }
+
+  .propal-proposal-panel {
+    @apply rounded-lg border border-border bg-surface p-4 sm:p-5 md:p-6;
+  }
+
+  .propal-proposal-search {
+    @apply relative;
+  }
+
+  .propal-proposal-search__field {
+    @apply relative flex items-center;
+  }
+
+  .propal-proposal-search__icon {
+    @apply pointer-events-none absolute left-4 text-text-muted;
+  }
+
+  .propal-proposal-search__input {
+    @apply w-full rounded-xl border border-border bg-bg py-4 pl-12 pr-4 text-base text-text transition-colors duration-200 placeholder:text-text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20;
+  }
+
+  .propal-proposal-preview {
+    @apply flex gap-4 rounded-lg border border-accent/30 bg-bg-alt p-4;
+  }
+
+  .propal-proposal-manual summary {
+    @apply list-none;
+  }
+
+  .propal-proposal-manual summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .propal-search-results {
+    @apply absolute inset-x-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-surface shadow-lg;
+  }
+
+  .propal-search-results__item {
+    @apply flex w-full cursor-pointer items-center gap-3 border-b border-border px-3 py-2.5 text-left transition-colors duration-200 last:border-b-0 hover:bg-bg-alt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent;
+  }
+
+  .propal-search-results__body {
+    @apply flex min-w-0 flex-1 flex-col gap-0.5;
+  }
+
+  .propal-artwork {
+    @apply shrink-0 rounded-md border border-border bg-bg object-cover;
+  }
+
+  .propal-artwork--sm {
+    @apply h-16 w-16;
+  }
+
+  .propal-artwork--md {
+    @apply h-16 w-16 sm:h-20 sm:w-20;
+  }
+
+  .propal-artwork--placeholder {
+    @apply inline-flex items-center justify-center text-text-muted;
+  }
+
+  .propal-streaming-links {
+    @apply mt-2 flex flex-wrap gap-1.5;
+  }
+
+  .propal-streaming-link {
+    @apply inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-border bg-bg text-text transition-colors duration-200 hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
+  .propal-streaming-link--spotify:hover {
+    @apply border-[#1DB954] text-[#1DB954];
+  }
+
+  .propal-streaming-link--deezer:hover {
+    @apply border-[#A855F7] text-[#A855F7];
+  }
+
+  .propal-streaming-link--youtube:hover {
+    @apply border-[#FF0000] text-[#FF0000];
+  }
+
+  .propal-search-results__title {
+    @apply text-sm font-semibold text-text;
+  }
+
+  .propal-search-results__meta {
+    @apply text-xs text-text-muted;
+  }
+
+  .propal-search-results__empty {
+    @apply px-4 py-3 text-sm text-text-muted;
   }
 
   /* Flex wrap : portrait étroit + paysage flexible côte à côte */

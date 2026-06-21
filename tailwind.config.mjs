@@ -4,10 +4,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: { DEFAULT: "#0A0A0A", alt: "#121212" },
-        surface: "#1A1A1A",
-        border: "#2A2A2A",
-        text: { DEFAULT: "#F5F5F5", muted: "#A0A0A0" },
+        bg: {
+          DEFAULT: "rgb(var(--color-bg) / <alpha-value>)",
+          alt: "rgb(var(--color-bg-alt) / <alpha-value>)",
+        },
+        surface: "rgb(var(--color-surface) / <alpha-value>)",
+        border: "rgb(var(--color-border) / <alpha-value>)",
+        text: {
+          DEFAULT: "rgb(var(--color-text) / <alpha-value>)",
+          muted: "rgb(var(--color-text-muted) / <alpha-value>)",
+        },
         accent: { DEFAULT: "#FF6B35", hover: "#E63946" },
         success: "#22C55E",
         error: "#EF4444",

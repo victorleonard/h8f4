@@ -1,6 +1,7 @@
 import { defineConfig } from "astro/config";
 import tailwind from "@astrojs/tailwind";
 import sitemap from "@astrojs/sitemap";
+import vercel from "@astrojs/vercel";
 import { loadEnv } from "vite";
 
 /** Ex. `/h8f4/` pour un déploiement en sous-dossier ; `/` à la racine du domaine. */
@@ -20,5 +21,6 @@ const noindex = (env.PUBLIC_NOINDEX ?? process.env.PUBLIC_NOINDEX) === "true";
 export default defineConfig({
   site: env.PUBLIC_SITE_URL ?? process.env.PUBLIC_SITE_URL ?? "https://h8f4.fr",
   base,
+  adapter: vercel(),
   integrations: [tailwind(), ...(noindex ? [] : [sitemap()])],
 });
