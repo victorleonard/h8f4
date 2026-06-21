@@ -88,6 +88,7 @@ function initHeroViewport() {
   };
 
   lockHeight();
+  window.addEventListener('resize', lockHeight, { passive: true });
   window.addEventListener('orientationchange', () => {
     window.setTimeout(lockHeight, 150);
   });

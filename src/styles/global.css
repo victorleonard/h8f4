@@ -193,6 +193,10 @@
     @apply scale-105;
   }
 
+  .photo-gallery__slide-image {
+    @apply h-full w-full object-cover object-center;
+  }
+
   /* Lightbox plein écran */
   .photo-lightbox {
     @apply fixed inset-0 z-[70] flex items-center justify-center;
@@ -244,8 +248,14 @@
 }
 
 @layer components {
+  /* Hero — plein écran (100svh, min 500px) ; --hero-h affiné en JS */
+  #hero {
+    min-height: max(500px, var(--hero-h, 100svh));
+  }
+
   /* Hero — animation d'entrée au chargement */
   .hero__image {
+    @apply grayscale contrast-[1.05];
     opacity: 0;
     animation: hero-image-reveal 2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     will-change: transform, opacity;
