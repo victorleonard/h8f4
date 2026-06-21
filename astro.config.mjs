@@ -22,5 +22,14 @@ export default defineConfig({
   site: env.PUBLIC_SITE_URL ?? process.env.PUBLIC_SITE_URL ?? "https://h8f4.fr",
   base,
   adapter: node({ mode: "standalone" }),
-  integrations: [tailwind(), ...(noindex ? [] : [sitemap()])],
+  integrations: [
+    tailwind(),
+    ...(noindex
+      ? []
+      : [
+          sitemap({
+            filter: (page) => !page.includes("/propal"),
+          }),
+        ]),
+  ],
 });
