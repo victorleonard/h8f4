@@ -8,7 +8,7 @@ Espace interne permettant aux membres du groupe **H8F4** de proposer des reprise
 
 ## Fonctionnement
 
-1. Chaque membre **choisit son compte** au premier accès (liste stockée dans Redis).
+1. Chaque membre **choisit son compte** au premier accès (liste stockée en base SQLite).
 2. Le choix est mémorisé dans le navigateur (`localStorage`) — pas de mot de passe.
 3. Un membre peut **proposer** un titre (nom + artiste optionnel).
 4. Chaque membre peut **noter chaque titre de 1 à 5** (modifiable ou retirable).
@@ -21,65 +21,85 @@ Espace interne permettant aux membres du groupe **H8F4** de proposer des reprise
 
 ## Comptes membres
 
-Les comptes sont stockés dans **Redis** et chargés automatiquement sur la page `/propal`. Il n'y a pas d'interface d'administration : les membres se configurent directement dans [Upstash](https://console.upstash.com/).
+Les comptes sont stockés dans **SQLite** et chargés automatiquement sur la page `/propal`. L'ajout et la modification se font via **Admin** (mot de passe `PROPAL_ADMIN_PASSWORD` dans `.env`).
 
-### Ajouter un membre dans Upstash
+### Ajouter un membre (interface)
 
-Pour chaque membre, deux opérations :
+1. Se connecter, cliquer sur l'avatar puis **Admin**
+2. Saisir le mot de passe admin
+3. Ajouter ou modifier les membres
 
-1. **SADD** sur la clé `propal:members` — ajouter l'identifiant (ex. `victor`)
-2. **SET** sur la clé `propal:member:victor` — valeur JSON :
+### Ajouter un membre (script)
+
+1. Éditer `data/propal-members.example.json` (ou créer un fichier JSON dédié) :
 
 ```json
-{"id":"victor","label":"Victor","createdAt":"2026-06-21T12:00:00.000Z"}
+[
+  { "id": "victor", "label": "Victor" },
+  { "id": "rom", "label": "Rom" }
+]
 ```
 
-| Champ   | Rôle                                              |
-| ------- | ------------------------------------------------- |
-| `id`    | Identifiant stable (slug, sans espaces)           |
+2. Lancer le seed :
+
+```bash
+npm run seed:propal-members
+# ou avec un fichier personnalisé :
+node scripts/seed-propal-members.mjs data/mes-membres.json
+```
+
+| Champ   | Rôle                                           |
+| ------- | ---------------------------------------------- |
+| `id`    | Identifiant stable (slug, sans espaces)        |
 | `label` | Nom affiché dans l'interface et dans les notes |
 
 - L'`id` ne doit **pas** être modifié après création (l'historique des propositions et notes y fait référence).
 - Seuls les `id` présents en base sont acceptés par l'API.
+- Le script utilise `INSERT OR IGNORE` : relancer le seed n'écrase pas les membres existants.
 
 ---
 
-## Stockage — Upstash Redis
+## Stockage — SQLite
 
-Les propositions et notes sont stockés dans [Upstash Redis](https://upstash.com/) (offre gratuite suffisante pour un usage interne).
+Les propositions et notes sont stockées dans un fichier **SQLite** local (`propal.db`). Aucun service externe requis.
 
-### 1. Créer une base Redis
+### 1. Chemin de la base
 
-1. Créer un compte sur [console.upstash.com](https://console.upstash.com/).
-2. **Create Database** → région proche de l'hébergement (ex. `eu-west-1` pour Vercel EU).
-3. Copier **UPSTASH_REDIS_REST_URL** et **UPSTASH_REDIS_REST_TOKEN**.
-
-### 2. Variables d'environnement
-
-Ajouter dans `.env` (local) et dans les variables du projet Vercel :
+Variable d'environnement (voir `.env.example`) :
 
 ```env
-UPSTASH_REDIS_REST_URL=https://xxxx.upstash.io
-UPSTASH_REDIS_REST_TOKEN=AXxxxx
+PROPAL_DB_PATH=./data/propal.db
+PROPAL_ADMIN_PASSWORD=votre_mot_de_passe
 ```
 
-Voir aussi `.env.example`.
+Sous Docker, le volume `data/` est monté sur `/app/data` et la variable est définie à `/app/data/propal.db`.
 
-### 3. Modèle de données Redis
+La base et les tables sont **créées automatiquement** au premier accès si le fichier n'existe pas.
 
-| Clé                         | Type   | Contenu                                      |
-| --------------------------- | ------ | -------------------------------------------- |
-| `propal:members`            | SET    | IDs des comptes membres                      |
-| `propal:member:{id}`        | STRING | JSON : id, label, date de création           |
-| `propal:proposals`          | ZSET   | IDs des propositions, score = note moyenne |
-| `propal:item:{id}`          | STRING | JSON : titre, artiste, auteur, date, `artworkUrl`, `spotifyUrl`, `deezerUrl`, `youtubeUrl` (optionnels) |
-| `propal:ratings:{id}`       | HASH   | Notes par membre (`memberId` → `1`–`5`) |
+`PROPAL_ADMIN_PASSWORD` protège l'accès Admin (ajout / modification des membres via l'interface ou l'API).
+
+### 2. Schéma
+
+| Table       | Contenu                                          |
+| ----------- | ------------------------------------------------ |
+| `members`   | Comptes membres (id, label, date de création)    |
+| `proposals` | Titres proposés (titre, artiste, auteur, liens…) |
+| `ratings`   | Notes par membre et par proposition (1–5)        |
+
+### 3. Sauvegarde
+
+Copier le fichier `data/propal.db` suffit. Sous Docker :
+
+```bash
+cp data/propal.db data/propal.db.backup
+# ou depuis l'hôte si le volume est monté
+```
 
 ---
 
 ## Déploiement
 
-Le site peut être déployé sur **Vercel** (adaptateur historique) ou en **Docker sur un VPS** (recommandé pour OVH).
+Le site est déployé en **Docker sur un VPS** (adaptateur `@astrojs/node` en mode standalone).
 
 ### Docker (VPS)
 
@@ -87,43 +107,50 @@ Voir le guide complet : **[@docker/README.md](../@docker/README.md)**
 
 ```bash
 cp .env.example .env
+mkdir -p data
+npm run seed:propal-members
 docker compose -f @docker/docker-compose.yml build
 docker compose -f @docker/docker-compose.yml up -d
 ```
 
-### Vercel (alternative)
+### Prérequis
 
-Ancienne cible possible ; le projet utilise désormais `@astrojs/node` pour Docker. Pour Vercel, réinstaller `@astrojs/vercel` et adapter `astro.config.mjs`.
-
-### Prérequis communs
-
-- Base Upstash configurée (voir ci-dessus)
-- Comptes membres configurés dans Upstash Redis
+- Dossier `data/` avec la base SQLite (volume Docker)
+- Comptes membres seedés (`npm run seed:propal-members`)
 
 ### Développement local
 
 ```bash
 cp .env.example .env
-# Renseigner UPSTASH_REDIS_REST_URL et UPSTASH_REDIS_REST_TOKEN
-
+mkdir -p data
+npm run seed:propal-members
 npm run dev
 ```
 
 Ouvrir `http://localhost:4321/propal`.
 
-> Sans variables Upstash, la page s'affiche mais les appels API renvoient une erreur 503.
+> Sans membres seedés, la page s'affiche mais aucun compte n'est disponible à la sélection.
+
+---
+
+## Scripts utiles
+
+| Commande                      | Rôle                                                         |
+| ----------------------------- | ------------------------------------------------------------ |
+| `npm run seed:propal-members` | Insère les membres depuis `data/propal-members.example.json` |
+| `npm run seed:propal-rom`     | Ajoute des titres de démo (membre `rom` requis)              |
 
 ---
 
 ## API (référence)
 
-| Méthode | Route                    | Description                    |
-| ------- | ------------------------ | ------------------------------ |
-| `GET`   | `/api/propal`            | Liste des propositions + membres |
-| `GET`   | `/api/propal/search`     | Recherche de titres (iTunes)     |
-| `POST`  | `/api/propal/proposals`  | Créer une proposition            |
-| `DELETE`| `/api/propal/proposals`  | Supprimer sa proposition         |
-| `POST`  | `/api/propal/vote`       | Noter ou retirer sa note         |
+| Méthode  | Route                   | Description                      |
+| -------- | ----------------------- | -------------------------------- |
+| `GET`    | `/api/propal`           | Liste des propositions + membres |
+| `GET`    | `/api/propal/search`    | Recherche de titres (iTunes)     |
+| `POST`   | `/api/propal/proposals` | Créer une proposition            |
+| `DELETE` | `/api/propal/proposals` | Supprimer sa proposition         |
+| `POST`   | `/api/propal/vote`      | Noter ou retirer sa note         |
 
 ### Recherche de titres
 
@@ -136,7 +163,12 @@ Réponse :
 ```json
 {
   "results": [
-    { "title": "Creep", "artist": "Radiohead", "album": "Pablo Honey", "artworkUrl": "https://…" }
+    {
+      "title": "Creep",
+      "artist": "Radiohead",
+      "album": "Pablo Honey",
+      "artworkUrl": "https://…"
+    }
   ]
 }
 ```
@@ -145,12 +177,12 @@ Proxy vers l'**[API iTunes Search](https://developer.apple.com/library/archive/d
 
 **Alternatives gratuites** (non intégrées, mais possibles) :
 
-| API | Avantages | Inconvénients |
-| --- | --------- | ------------- |
-| **iTunes Search** ✅ utilisée | Gratuite, sans clé, titre + artiste + album | Catalogue orienté Apple Music |
-| **MusicBrainz** | Open data, très complète | 1 req/s, User-Agent obligatoire |
-| **Discogs** | Bon pour les versions / pressages | Clé API requise |
-| **Spotify** | Catalogue riche | OAuth + quotas, plus complexe |
+| API                           | Avantages                                   | Inconvénients                   |
+| ----------------------------- | ------------------------------------------- | ------------------------------- |
+| **iTunes Search** ✅ utilisée | Gratuite, sans clé, titre + artiste + album | Catalogue orienté Apple Music   |
+| **MusicBrainz**               | Open data, très complète                    | 1 req/s, User-Agent obligatoire |
+| **Discogs**                   | Bon pour les versions / pressages           | Clé API requise                 |
+| **Spotify**                   | Catalogue riche                             | OAuth + quotas, plus complexe   |
 
 ### Créer une proposition
 
@@ -164,15 +196,15 @@ POST /api/propal/proposals
 }
 ```
 
-Le champ `artworkUrl` est enregistré dans Redis avec la proposition lorsqu'un titre est choisi via la recherche iTunes.
+Le champ `artworkUrl` est enregistré en base avec la proposition lorsqu'un titre est choisi via la recherche iTunes.
 
 À la création, les liens **Spotify**, **Deezer** et **YouTube** sont résolus automatiquement :
 
-| Service | API | Sans configuration |
-| ------- | --- | ------------------ |
-| Deezer | API publique gratuite → lien direct morceau si trouvé | Lien de recherche Deezer |
+| Service | API                                                                               | Sans configuration        |
+| ------- | --------------------------------------------------------------------------------- | ------------------------- |
+| Deezer  | API publique gratuite → lien direct morceau si trouvé                             | Lien de recherche Deezer  |
 | Spotify | API Spotify (Client Credentials) si `SPOTIFY_CLIENT_ID` + `SPOTIFY_CLIENT_SECRET` | Lien de recherche Spotify |
-| YouTube | YouTube Data API v3 si `YOUTUBE_API_KEY` | Lien de recherche YouTube |
+| YouTube | YouTube Data API v3 si `YOUTUBE_API_KEY`                                          | Lien de recherche YouTube |
 
 Les propositions existantes sans liens enregistrés affichent un lien de recherche généré à partir du titre et de l'artiste.
 
@@ -230,12 +262,15 @@ Ne partagez l'URL `/propal` qu'avec les membres du groupe.
 
 ## Fichiers concernés
 
-| Fichier                          | Rôle                              |
-| -------------------------------- | --------------------------------- |
-| `src/pages/propal.astro`         | Page principale                   |
-| `src/scripts/propal.ts`          | Logique client (compte, notes)    |
-| `src/lib/propal-members-store.ts`| Stockage Redis des membres      |
-| `src/lib/propal-store.ts`        | Accès Redis                       |
-| `src/pages/api/propal/*.ts`      | Routes API                        |
-| `astro.config.mjs`               | Adaptateur Node (standalone)      |
-| `@docker/`                       | Dockerfile, compose, guide VPS    |
+| Fichier                            | Rôle                           |
+| ---------------------------------- | ------------------------------ |
+| `src/pages/propal.astro`           | Page principale                |
+| `src/scripts/propal.ts`            | Logique client (compte, notes) |
+| `src/lib/db.ts`                    | Connexion SQLite               |
+| `src/lib/propal-schema.ts`         | Schéma SQL                     |
+| `src/lib/propal-members-store.ts`  | Accès membres                  |
+| `src/lib/propal-store.ts`          | Accès propositions et notes    |
+| `src/pages/api/propal/*.ts`        | Routes API                     |
+| `data/propal-members.example.json` | Exemple de membres à seeder    |
+| `scripts/seed-propal-members.mjs`  | Seed des comptes membres       |
+| `@docker/`                         | Dockerfile, compose, guide VPS |

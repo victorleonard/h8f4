@@ -52,17 +52,18 @@ const musicGroupSchema = buildMusicGroupSchema(siteUrl);
     <link rel="icon" type="image/png" sizes="1200x1200" href={withBase('/og-image.png')} />
     <link rel="apple-touch-icon" sizes="1200x1200" href={withBase('/og-image.png')} />
     <title>{title}</title>
-    <script is:inline>
+    <script is:inline define:vars={{ themeSwitchable: minimal }}>
       (function () {
         var STORAGE_KEY = "h8f4-theme";
 
         function getTheme() {
           var current = document.documentElement.getAttribute("data-theme");
           if (current === "light" || current === "dark") return current;
-          return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+          return "dark";
         }
 
         function syncThemeToggleButtons() {
+          if (!themeSwitchable) return;
           var isDark = getTheme() === "dark";
           var buttons = document.querySelectorAll("[data-theme-toggle]");
           for (var i = 0; i < buttons.length; i++) {
@@ -75,37 +76,39 @@ const musicGroupSchema = buildMusicGroupSchema(siteUrl);
           }
         }
 
-        function applyTheme(theme) {
+        function applyTheme(theme, persist) {
           document.documentElement.setAttribute("data-theme", theme);
           document.documentElement.style.colorScheme = theme;
-          try {
-            localStorage.setItem(STORAGE_KEY, theme);
-          } catch (e) {}
+          if (persist) {
+            try {
+              localStorage.setItem(STORAGE_KEY, theme);
+            } catch (e) {}
+          }
           syncThemeToggleButtons();
         }
 
-        window.h8f4ToggleTheme = function (event) {
-          if (event && event.preventDefault) event.preventDefault();
-          if (event && event.stopPropagation) event.stopPropagation();
-          applyTheme(getTheme() === "dark" ? "light" : "dark");
-        };
+        if (themeSwitchable) {
+          window.h8f4ToggleTheme = function (event) {
+            if (event && event.preventDefault) event.preventDefault();
+            if (event && event.stopPropagation) event.stopPropagation();
+            applyTheme(getTheme() === "dark" ? "light" : "dark", true);
+          };
 
-        var stored = null;
-        try {
-          stored = localStorage.getItem(STORAGE_KEY);
-        } catch (e) {}
-        applyTheme(
-          stored === "light" || stored === "dark"
-            ? stored
-            : window.matchMedia("(prefers-color-scheme: light)").matches
-              ? "light"
-              : "dark"
-        );
-
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", syncThemeToggleButtons);
+          var stored = null;
+          try {
+            stored = localStorage.getItem(STORAGE_KEY);
+          } catch (e) {}
+          applyTheme(stored === "light" || stored === "dark" ? stored : "dark", false);
         } else {
-          syncThemeToggleButtons();
+          applyTheme("dark", false);
+        }
+
+        if (themeSwitchable) {
+          if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", syncThemeToggleButtons);
+          } else {
+            syncThemeToggleButtons();
+          }
         }
       })();
     </script>

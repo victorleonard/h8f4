@@ -14,9 +14,11 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: 3000
+      PROPAL_DB_PATH: /app/data/propal.db
     ports:
       - "${HOST_PORT:-3000}:3000"
     volumes:
+      - ../data:/app/data
       # Médias non versionnés — à synchroniser sur le serveur (rsync, scp…)
       - ../public/live:/app/dist/client/live:ro
       - ../public/images:/app/dist/client/images:ro

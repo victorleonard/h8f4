@@ -220,6 +220,58 @@ function renderMemberPicker(members: PropalMember[], selectedId: string | null):
     .join("");
 }
 
+function renderMemberAdminList(members: PropalMember[], editingId: string | null): string {
+  if (members.length === 0) {
+    return `<li class="text-sm text-text-muted">Aucun membre.</li>`;
+  }
+
+  return members
+    .map((member) => {
+      if (editingId === member.id) {
+        return `
+          <li class="propal-member-admin__row propal-member-admin__row--edit">
+            <span class="propal-member-admin__chip-avatar" aria-hidden="true">${escapeHtml(memberInitial(member.label))}</span>
+            <input
+              class="input-field propal-member-admin__edit-input"
+              type="text"
+              value="${escapeHtml(member.label)}"
+              minlength="2"
+              maxlength="40"
+              data-member-edit-label="${member.id}"
+            />
+            <div class="propal-member-admin__row-actions">
+              <button type="button" class="btn-primary px-3 py-1.5 text-sm" data-member-edit-save="${member.id}">OK</button>
+              <button type="button" class="btn-secondary px-3 py-1.5 text-sm" data-member-edit-cancel>Annuler</button>
+            </div>
+          </li>
+        `;
+      }
+
+      return `
+        <li class="propal-member-admin__row">
+          <span class="propal-member-admin__chip-avatar" aria-hidden="true">${escapeHtml(memberInitial(member.label))}</span>
+          <span class="propal-member-admin__row-label">${escapeHtml(member.label)}</span>
+          <div class="propal-member-admin__row-actions">
+            <button type="button" class="propal-member-admin__edit-btn" data-member-edit="${member.id}">Modifier</button>
+            <button type="button" class="propal-member-admin__delete-btn" data-member-delete="${member.id}" aria-label="Supprimer ${escapeHtml(member.label)}">${ICON_DELETE}</button>
+          </div>
+        </li>
+      `;
+    })
+    .join("");
+}
+
+function slugifyMemberLabel(label: string): string {
+  return label
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 32);
+}
+
 function renderRatingChips(
   proposal: PropalProposalView,
   memberId: string | null,
@@ -583,7 +635,7 @@ function initSongSearch(
 
   root.addEventListener("click", (event) => {
     const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
+    if (!(target instanceof Element)) return;
 
     const pickBtn = target.closest<HTMLButtonElement>("[data-song-pick]");
     if (pickBtn) {
@@ -623,6 +675,7 @@ function initPropalPage(): void {
 
   const page = root.closest<HTMLElement>(".propal-page");
   const memberStep = root.querySelector<HTMLElement>("[data-member-step]");
+  const memberSelect = root.querySelector<HTMLElement>("[data-member-select]");
   const memberPicker = root.querySelector<HTMLElement>("[data-member-picker]");
   const memberAvatar = page?.querySelector<HTMLElement>("[data-member-avatar]");
   const memberChange = page?.querySelector<HTMLButtonElement>("[data-member-change]");
@@ -657,6 +710,20 @@ function initPropalPage(): void {
   const filterChips = root.querySelectorAll<HTMLButtonElement>("[data-list-filter]");
   const statusEl = root.querySelector<HTMLElement>("[data-propal-status]");
   const errorEl = root.querySelector<HTMLElement>("[data-propal-error]");
+  const memberAdminAccess = root.querySelector<HTMLElement>("[data-member-admin-access]");
+  const memberAdminPanel = root.querySelector<HTMLElement>("[data-member-admin-panel]");
+  const memberAdminList = root.querySelector<HTMLElement>("[data-member-admin-list]");
+  const memberAdminToggle = root.querySelector<HTMLButtonElement>("[data-member-admin-toggle]");
+  const memberAdminAuthForm = root.querySelector<HTMLFormElement>("[data-member-admin-auth]");
+  const memberAdminPassword = root.querySelector<HTMLInputElement>("[data-member-admin-password]");
+  const memberAdminAuthSubmit = root.querySelector<HTMLButtonElement>("[data-member-admin-auth-submit]");
+  const memberAdminAuthCancel = root.querySelector<HTMLButtonElement>("[data-member-admin-auth-cancel]");
+  const memberAddToggle = root.querySelector<HTMLButtonElement>("[data-member-add-toggle]");
+  const memberAddForm = root.querySelector<HTMLFormElement>("[data-member-add-form]");
+  const memberAddLabel = root.querySelector<HTMLInputElement>("[data-member-add-label]");
+  const memberAddId = root.querySelector<HTMLInputElement>("[data-member-add-id]");
+  const memberAddSubmit = root.querySelector<HTMLButtonElement>("[data-member-add-submit]");
+  const memberAddCancel = root.querySelector<HTMLButtonElement>("[data-member-add-cancel]");
 
   let memberId = getStoredMemberId();
   let members: PropalMember[] = [];
@@ -664,6 +731,11 @@ function initPropalPage(): void {
   let selectedSong: SongSearchResult | null = null;
   let activeView: PropalView = "ranking";
   let listFilter: ListFilter = "all";
+  let adminPanelOpen = false;
+  let editingMemberId: string | null = null;
+  let accountSwitcherOpen = false;
+  let adminAuthenticated = false;
+  let adminPassword: string | null = null;
 
   function getDefaultView(): PropalView {
     if (memberId && countPendingProposals(proposals, memberId) > 0) {
@@ -816,12 +888,95 @@ function initPropalPage(): void {
     errorEl.classList.toggle("hidden", !message);
   }
 
+  function setMemberAddFormOpen(open: boolean): void {
+    memberAddForm?.classList.toggle("hidden", !open);
+    memberAddToggle?.setAttribute("aria-expanded", String(open));
+    memberAddToggle?.classList.toggle("hidden", open);
+
+    if (!open) {
+      memberAddForm?.reset();
+      if (memberAddId) memberAddId.dataset.autofill = "";
+    } else {
+      editingMemberId = null;
+      if (memberAdminList) {
+        memberAdminList.innerHTML = renderMemberAdminList(members, editingMemberId);
+      }
+      memberAddLabel?.focus();
+    }
+  }
+
+  function clearAdminAuth(): void {
+    adminAuthenticated = false;
+    adminPassword = null;
+    memberAdminAuthForm?.reset();
+    setAdminAuthFormOpen(false);
+  }
+
+  function setAdminAuthFormOpen(open: boolean): void {
+    memberAdminAuthForm?.classList.toggle("hidden", !open);
+    memberAdminToggle?.classList.toggle("hidden", open);
+  }
+
+  function setAdminPanelOpen(open: boolean): void {
+    adminPanelOpen = open;
+    memberAdminPanel?.classList.toggle("hidden", !open);
+    memberAdminToggle?.setAttribute("aria-expanded", String(open));
+
+    if (!open) {
+      setMemberAddFormOpen(false);
+      editingMemberId = null;
+    }
+  }
+
+  async function authenticateAdmin(password: string): Promise<boolean> {
+    const response = await fetch(apiUrl("/api/propal/members/auth"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(payload?.error ?? "Mot de passe incorrect");
+    }
+
+    adminAuthenticated = true;
+    adminPassword = password;
+    return true;
+  }
+
+  function updateMemberAdminUi(): void {
+    const showAdminAccess = accountSwitcherOpen && Boolean(memberId);
+
+    memberAdminAccess?.classList.toggle("hidden", !showAdminAccess);
+
+    if (!showAdminAccess) {
+      clearAdminAuth();
+      setAdminPanelOpen(false);
+      return;
+    }
+
+    if (!adminAuthenticated) {
+      setAdminPanelOpen(false);
+      return;
+    }
+
+    if (memberAdminList) {
+      memberAdminList.innerHTML = renderMemberAdminList(members, editingMemberId);
+    }
+
+    memberAdminPanel?.classList.toggle("hidden", !adminPanelOpen);
+    memberAdminToggle?.setAttribute("aria-expanded", String(adminPanelOpen));
+  }
+
   function updateMemberUi(): void {
     const hasMember = Boolean(memberId);
     const member = members.find((item) => item.id === memberId);
+    const showMemberStep = !hasMember || accountSwitcherOpen;
 
-    memberStep?.classList.toggle("hidden", hasMember);
-    propalContent?.classList.toggle("hidden", !hasMember);
+    memberStep?.classList.toggle("hidden", !showMemberStep);
+    memberSelect?.classList.toggle("hidden", hasMember && !accountSwitcherOpen);
+    propalContent?.classList.toggle("hidden", !hasMember || accountSwitcherOpen);
     memberChange?.classList.toggle("hidden", !hasMember);
 
     if (memberPicker) {
@@ -830,10 +985,161 @@ function initPropalPage(): void {
 
     if (hasMember && member) {
       if (memberAvatar) memberAvatar.textContent = memberInitial(member.label);
-      memberChange?.setAttribute("aria-label", `${member.label} — Changer de compte`);
+      memberChange?.setAttribute(
+        "aria-label",
+        accountSwitcherOpen ? "Fermer le choix de compte" : `${member.label} — Changer de compte`,
+      );
+      memberChange?.classList.toggle("propal-member-nav--active", accountSwitcherOpen);
     }
 
     proposalSubmit?.toggleAttribute("disabled", !hasMember);
+    updateMemberAdminUi();
+  }
+
+  function openAccountSwitcher(): void {
+    accountSwitcherOpen = true;
+    setAdminPanelOpen(false);
+    editingMemberId = null;
+    updateMemberUi();
+    memberStep?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function closeAccountSwitcher(): void {
+    accountSwitcherOpen = false;
+    clearAdminAuth();
+    setAdminPanelOpen(false);
+    editingMemberId = null;
+    updateMemberUi();
+  }
+
+  async function refreshMembers(membersList: PropalMember[]): Promise<void> {
+    members = membersList;
+    updateMemberUi();
+    if (memberId) {
+      await loadProposals();
+    }
+  }
+
+  async function submitNewMember(): Promise<void> {
+    if (!adminPassword || !memberAddLabel) return;
+
+    const label = memberAddLabel.value.trim();
+    const idInput = memberAddId?.value.trim().toLowerCase() ?? "";
+    const id = idInput || slugifyMemberLabel(label);
+
+    if (label.length < 2) {
+      setError("Le prénom doit contenir au moins 2 caractères.");
+      return;
+    }
+
+    setError("");
+    memberAddSubmit?.setAttribute("disabled", "true");
+
+    try {
+      const response = await fetch(apiUrl("/api/propal/members"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          adminPassword,
+          label,
+          id: idInput ? id : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        if (response.status === 403) clearAdminAuth();
+        throw new Error(payload?.error ?? "Impossible d'ajouter le membre");
+      }
+
+      const data = (await response.json()) as { members: PropalMember[] };
+      await refreshMembers(data.members);
+      setMemberAddFormOpen(false);
+      setStatus(`${label} a été ajouté(e).`);
+      window.setTimeout(() => setStatus(""), 2500);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Erreur inconnue");
+    } finally {
+      memberAddSubmit?.removeAttribute("disabled");
+    }
+  }
+
+  async function submitMemberUpdate(targetId: string, label: string): Promise<void> {
+    if (!adminPassword) return;
+
+    if (label.length < 2) {
+      setError("Le prénom doit contenir au moins 2 caractères.");
+      return;
+    }
+
+    setError("");
+
+    try {
+      const response = await fetch(apiUrl("/api/propal/members"), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminPassword, targetId, label }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        if (response.status === 403) clearAdminAuth();
+        throw new Error(payload?.error ?? "Impossible de modifier le membre");
+      }
+
+      const data = (await response.json()) as { members: PropalMember[] };
+      editingMemberId = null;
+      await refreshMembers(data.members);
+      setStatus("Membre mis à jour.");
+      window.setTimeout(() => setStatus(""), 2500);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Erreur inconnue");
+    }
+  }
+
+  async function submitMemberDelete(targetId: string, label: string): Promise<void> {
+    if (!adminPassword) {
+      setError("Session admin expirée. Reconnectez-vous.");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Supprimer ${label} ? Ses propositions et ses notes seront également effacées.`,
+      )
+    ) {
+      return;
+    }
+
+    setError("");
+
+    try {
+      const response = await fetch(apiUrl("/api/propal/members"), {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminPassword, targetId }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        if (response.status === 403) clearAdminAuth();
+        throw new Error(payload?.error ?? "Impossible de supprimer le membre");
+      }
+
+      const data = (await response.json()) as { members: PropalMember[] };
+
+      if (memberId === targetId) {
+        memberId = null;
+        localStorage.removeItem(STORAGE_KEY);
+      }
+
+      editingMemberId = null;
+      await refreshMembers(data.members);
+      setStatus(`${label} a été supprimé(e).`);
+      window.setTimeout(() => setStatus(""), 2500);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Erreur inconnue");
+    }
   }
 
   async function submitProposal(payload: {
@@ -882,6 +1188,7 @@ function initPropalPage(): void {
 
     memberId = id;
     setStoredMemberId(id);
+    accountSwitcherOpen = false;
     setError("");
     updateMemberUi();
     await loadProposals();
@@ -910,7 +1217,7 @@ function initPropalPage(): void {
 
   memberPicker?.addEventListener("click", (event) => {
     const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
+    if (!(target instanceof Element)) return;
 
     const pickBtn = target.closest<HTMLButtonElement>("[data-member-pick]");
     const id = pickBtn?.dataset.memberPick;
@@ -920,11 +1227,125 @@ function initPropalPage(): void {
   });
 
   memberChange?.addEventListener("click", () => {
-    memberId = null;
-    localStorage.removeItem(STORAGE_KEY);
-    updateMemberUi();
+    if (accountSwitcherOpen) {
+      closeAccountSwitcher();
+    } else {
+      openAccountSwitcher();
+    }
     setStatus("");
     setError("");
+  });
+
+  memberAdminToggle?.addEventListener("click", () => {
+    if (!adminAuthenticated) {
+      setAdminAuthFormOpen(true);
+      memberAdminPassword?.focus();
+      return;
+    }
+
+    setAdminPanelOpen(!adminPanelOpen);
+    updateMemberAdminUi();
+  });
+
+  memberAdminAuthForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!memberAdminPassword) return;
+
+    setError("");
+    memberAdminAuthSubmit?.setAttribute("disabled", "true");
+
+    try {
+      await authenticateAdmin(memberAdminPassword.value);
+      setAdminAuthFormOpen(false);
+      setAdminPanelOpen(true);
+      updateMemberAdminUi();
+      setStatus("Accès admin autorisé.");
+      window.setTimeout(() => setStatus(""), 2200);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Erreur inconnue");
+      memberAdminPassword.select();
+    } finally {
+      memberAdminAuthSubmit?.removeAttribute("disabled");
+    }
+  });
+
+  memberAdminAuthCancel?.addEventListener("click", () => {
+    setAdminAuthFormOpen(false);
+    memberAdminAuthForm?.reset();
+  });
+
+  memberAddToggle?.addEventListener("click", () => {
+    setMemberAddFormOpen(true);
+  });
+
+  memberAddCancel?.addEventListener("click", () => {
+    setMemberAddFormOpen(false);
+  });
+
+  memberAdminList?.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const editBtn = target.closest<HTMLButtonElement>("[data-member-edit]");
+    if (editBtn?.dataset.memberEdit) {
+      editingMemberId = editBtn.dataset.memberEdit;
+      setMemberAddFormOpen(false);
+      updateMemberAdminUi();
+      const input = memberAdminList.querySelector<HTMLInputElement>(
+        `[data-member-edit-label="${editingMemberId}"]`,
+      );
+      input?.focus();
+      input?.select();
+      return;
+    }
+
+    const saveBtn = target.closest<HTMLButtonElement>("[data-member-edit-save]");
+    if (saveBtn?.dataset.memberEditSave) {
+      const input = memberAdminList.querySelector<HTMLInputElement>(
+        `[data-member-edit-label="${saveBtn.dataset.memberEditSave}"]`,
+      );
+      if (!input) return;
+      void submitMemberUpdate(saveBtn.dataset.memberEditSave, input.value.trim());
+      return;
+    }
+
+    if (target.closest("[data-member-edit-cancel]")) {
+      editingMemberId = null;
+      updateMemberAdminUi();
+      return;
+    }
+
+    const deleteBtn = target.closest<HTMLButtonElement>("[data-member-delete]");
+    if (deleteBtn?.dataset.memberDelete) {
+      const member = members.find((item) => item.id === deleteBtn.dataset.memberDelete);
+      if (!member) return;
+      void submitMemberDelete(member.id, member.label);
+    }
+  });
+
+  memberAdminList?.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" || !(event.target instanceof HTMLInputElement)) return;
+    if (!event.target.matches("[data-member-edit-label]")) return;
+    event.preventDefault();
+    const targetId = event.target.dataset.memberEditLabel;
+    if (!targetId) return;
+    void submitMemberUpdate(targetId, event.target.value.trim());
+  });
+
+  memberAddLabel?.addEventListener("input", () => {
+    if (!memberAddLabel || !memberAddId) return;
+    if (memberAddId.value.trim() || memberAddId.dataset.autofill === "manual") return;
+    memberAddId.value = slugifyMemberLabel(memberAddLabel.value);
+  });
+
+  memberAddId?.addEventListener("input", () => {
+    if (!memberAddId) return;
+    memberAddId.dataset.autofill = memberAddId.value.trim() ? "manual" : "";
+  });
+
+  memberAddForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    void submitNewMember();
   });
 
   proposalClear?.addEventListener("click", () => {
@@ -991,7 +1412,7 @@ function initPropalPage(): void {
 
   root.addEventListener("click", async (event) => {
     const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
+    if (!(target instanceof Element)) return;
 
     const deleteBtn = target.closest<HTMLButtonElement>("[data-proposal-delete]");
     if (deleteBtn && memberId) {

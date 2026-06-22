@@ -37,3 +37,22 @@ export function normalizeArtworkUrl(artworkUrl: unknown): string | undefined {
   if (!trimmed) return undefined;
   return trimmed;
 }
+
+export function validateMemberSlug(id: unknown): id is string {
+  return typeof id === "string" && /^[a-z][a-z0-9_-]{1,31}$/.test(id);
+}
+
+export function validateMemberLabel(label: unknown): label is string {
+  return typeof label === "string" && label.trim().length >= 2 && label.trim().length <= 40;
+}
+
+export function slugifyMemberLabel(label: string): string {
+  return label
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 32);
+}

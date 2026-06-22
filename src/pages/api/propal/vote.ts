@@ -1,11 +1,21 @@
 import type { APIRoute } from "astro";
-import { errorResponse, jsonResponse, parseJsonBody, validateMemberId } from "../../../lib/api-utils";
+import {
+  errorResponse,
+  jsonResponse,
+  parseJsonBody,
+  validateMemberId,
+} from "../../../lib/api-utils";
 import { rateProposal, removeRating } from "../../../lib/propal-store";
 
 export const prerender = false;
 
 function validateRating(rating: unknown): rating is number {
-  return typeof rating === "number" && Number.isInteger(rating) && rating >= 1 && rating <= 5;
+  return (
+    typeof rating === "number" &&
+    Number.isInteger(rating) &&
+    rating >= 1 &&
+    rating <= 5
+  );
 }
 
 export const POST: APIRoute = async ({ request }) => {
@@ -49,9 +59,6 @@ export const POST: APIRoute = async ({ request }) => {
     return jsonResponse(data);
   } catch (error) {
     if (error instanceof Error) {
-      if (error.message === "REDIS_NOT_CONFIGURED") {
-        return errorResponse("Stockage non configuré (Upstash Redis).", 503);
-      }
       if (error.message === "PROPOSAL_NOT_FOUND") {
         return errorResponse("Proposition introuvable.", 404);
       }

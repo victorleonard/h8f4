@@ -22,6 +22,11 @@ export default defineConfig({
   site: env.PUBLIC_SITE_URL ?? process.env.PUBLIC_SITE_URL ?? "https://h8f4.fr",
   base,
   adapter: node({ mode: "standalone" }),
+  vite: {
+    ssr: {
+      external: ["better-sqlite3"],
+    },
+  },
   integrations: [
     tailwind(),
     ...(noindex

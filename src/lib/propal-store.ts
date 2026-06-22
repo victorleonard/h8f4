@@ -1,23 +1,40 @@
 import { getMemberMap, listMembers } from "./propal-members-store";
+import { getDb } from "./db";
 import { resolveMusicLinks } from "./music-links";
 import type { PropalListResponse, PropalProposal, PropalProposalView, PropalRating } from "./propal-types";
-import { getRedis } from "./redis";
 
-const PROPOSALS_KEY = "propal:proposals";
-const proposalKey = (id: string) => `propal:item:${id}`;
-const ratingsKey = (id: string) => `propal:ratings:${id}`;
+interface ProposalRow {
+  id: string;
+  title: string;
+  artist: string;
+  proposed_by: string;
+  created_at: string;
+  artwork_url: string | null;
+  spotify_url: string | null;
+  deezer_url: string | null;
+  youtube_url: string | null;
+  average_rating: number;
+  rating_count: number;
+}
 
-function parseRatings(raw: Record<string, string> | null | undefined): Map<string, number> {
-  const ratings = new Map<string, number>();
+interface RatingRow {
+  proposal_id: string;
+  member_id: string;
+  score: number;
+}
 
-  for (const [memberId, value] of Object.entries(raw ?? {})) {
-    const score = Number(value);
-    if (score >= 1 && score <= 5) {
-      ratings.set(memberId, score);
-    }
-  }
-
-  return ratings;
+function rowToProposal(row: ProposalRow): PropalProposal {
+  return {
+    id: row.id,
+    title: row.title,
+    artist: row.artist,
+    proposedBy: row.proposed_by,
+    createdAt: row.created_at,
+    ...(row.artwork_url ? { artworkUrl: row.artwork_url } : {}),
+    ...(row.spotify_url ? { spotifyUrl: row.spotify_url } : {}),
+    ...(row.deezer_url ? { deezerUrl: row.deezer_url } : {}),
+    ...(row.youtube_url ? { youtubeUrl: row.youtube_url } : {}),
+  };
 }
 
 function buildRatingStats(
@@ -63,37 +80,60 @@ function sortProposals(proposals: PropalProposalView[]): PropalProposalView[] {
   });
 }
 
-async function syncProposalScore(redis: NonNullable<ReturnType<typeof getRedis>>, proposalId: string): Promise<number> {
-  const raw = await redis.hgetall<Record<string, string>>(ratingsKey(proposalId));
-  const ratings = parseRatings(raw);
-  const averageRating = ratings.size
-    ? [...ratings.values()].reduce((sum, score) => sum + score, 0) / ratings.size
-    : 0;
+function loadRatingsByProposal(db: ReturnType<typeof getDb>, proposalIds: string[]): Map<string, Map<string, number>> {
+  const result = new Map<string, Map<string, number>>();
+  if (proposalIds.length === 0) return result;
 
-  await redis.zadd(PROPOSALS_KEY, { score: averageRating, member: proposalId });
-  return averageRating;
+  const placeholders = proposalIds.map(() => "?").join(", ");
+  const rows = db
+    .prepare(`SELECT proposal_id, member_id, score FROM ratings WHERE proposal_id IN (${placeholders})`)
+    .all(...proposalIds) as RatingRow[];
+
+  for (const row of rows) {
+    if (!result.has(row.proposal_id)) {
+      result.set(row.proposal_id, new Map());
+    }
+    result.get(row.proposal_id)!.set(row.member_id, row.score);
+  }
+
+  return result;
 }
 
 export async function listProposals(): Promise<PropalListResponse> {
-  const redis = getRedis();
-  if (!redis) {
-    throw new Error("REDIS_NOT_CONFIGURED");
-  }
-
+  const db = getDb();
   const [members, memberLabels] = await Promise.all([listMembers(), getMemberMap()]);
-  const ids = await redis.zrange<string[]>(PROPOSALS_KEY, 0, -1, { rev: true });
-  const proposals: PropalProposalView[] = [];
 
-  for (const id of ids ?? []) {
-    const raw = await redis.get<string>(proposalKey(id));
-    if (!raw) continue;
+  const rows = db
+    .prepare(
+      `SELECT
+        p.id,
+        p.title,
+        p.artist,
+        p.proposed_by,
+        p.created_at,
+        p.artwork_url,
+        p.spotify_url,
+        p.deezer_url,
+        p.youtube_url,
+        COALESCE(AVG(r.score), 0) AS average_rating,
+        COUNT(r.score) AS rating_count
+      FROM proposals p
+      LEFT JOIN ratings r ON r.proposal_id = p.id
+      GROUP BY p.id
+      ORDER BY average_rating DESC, rating_count DESC, p.created_at DESC`,
+    )
+    .all() as ProposalRow[];
 
-    const proposal = typeof raw === "string" ? (JSON.parse(raw) as PropalProposal) : (raw as PropalProposal);
-    const ratingsRaw = await redis.hgetall<Record<string, string>>(ratingsKey(id));
-    const ratings = parseRatings(ratingsRaw);
+  const ratingsByProposal = loadRatingsByProposal(
+    db,
+    rows.map((row) => row.id),
+  );
 
-    proposals.push(toView(proposal, ratings, memberLabels));
-  }
+  const proposals = rows.map((row) => {
+    const proposal = rowToProposal(row);
+    const ratings = ratingsByProposal.get(row.id) ?? new Map();
+    return toView(proposal, ratings, memberLabels);
+  });
 
   return { proposals: sortProposals(proposals), members };
 }
@@ -104,28 +144,40 @@ export async function createProposal(input: {
   proposedBy: string;
   artworkUrl?: string;
 }): Promise<PropalProposalView> {
-  const redis = getRedis();
-  if (!redis) {
-    throw new Error("REDIS_NOT_CONFIGURED");
-  }
-
+  const db = getDb();
   const memberLabels = await getMemberMap();
   const musicLinks = await resolveMusicLinks(input.title.trim(), input.artist.trim());
   const id = crypto.randomUUID();
+  const createdAt = new Date().toISOString();
+
+  db.prepare(
+    `INSERT INTO proposals (
+      id, title, artist, proposed_by, created_at,
+      artwork_url, spotify_url, deezer_url, youtube_url
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    id,
+    input.title.trim(),
+    input.artist.trim(),
+    input.proposedBy,
+    createdAt,
+    input.artworkUrl ?? null,
+    musicLinks.spotifyUrl,
+    musicLinks.deezerUrl,
+    musicLinks.youtubeUrl,
+  );
+
   const proposal: PropalProposal = {
     id,
     title: input.title.trim(),
     artist: input.artist.trim(),
     proposedBy: input.proposedBy,
-    createdAt: new Date().toISOString(),
+    createdAt,
     ...(input.artworkUrl ? { artworkUrl: input.artworkUrl } : {}),
     spotifyUrl: musicLinks.spotifyUrl,
     deezerUrl: musicLinks.deezerUrl,
     youtubeUrl: musicLinks.youtubeUrl,
   };
-
-  await redis.set(proposalKey(id), JSON.stringify(proposal));
-  await redis.zadd(PROPOSALS_KEY, { score: 0, member: id });
 
   return toView(proposal, new Map(), memberLabels);
 }
@@ -135,18 +187,17 @@ export async function rateProposal(input: {
   memberId: string;
   rating: number;
 }): Promise<PropalListResponse> {
-  const redis = getRedis();
-  if (!redis) {
-    throw new Error("REDIS_NOT_CONFIGURED");
-  }
-
-  const exists = await redis.exists(proposalKey(input.proposalId));
+  const db = getDb();
+  const exists = db.prepare("SELECT 1 AS ok FROM proposals WHERE id = ?").get(input.proposalId);
   if (!exists) {
     throw new Error("PROPOSAL_NOT_FOUND");
   }
 
-  await redis.hset(ratingsKey(input.proposalId), { [input.memberId]: String(input.rating) });
-  await syncProposalScore(redis, input.proposalId);
+  db.prepare(
+    `INSERT INTO ratings (proposal_id, member_id, score)
+     VALUES (?, ?, ?)
+     ON CONFLICT (proposal_id, member_id) DO UPDATE SET score = excluded.score`,
+  ).run(input.proposalId, input.memberId, input.rating);
 
   return listProposals();
 }
@@ -155,51 +206,38 @@ export async function removeRating(input: {
   proposalId: string;
   memberId: string;
 }): Promise<PropalListResponse> {
-  const redis = getRedis();
-  if (!redis) {
-    throw new Error("REDIS_NOT_CONFIGURED");
-  }
-
-  const exists = await redis.exists(proposalKey(input.proposalId));
+  const db = getDb();
+  const exists = db.prepare("SELECT 1 AS ok FROM proposals WHERE id = ?").get(input.proposalId);
   if (!exists) {
     throw new Error("PROPOSAL_NOT_FOUND");
   }
 
-  await redis.hdel(ratingsKey(input.proposalId), input.memberId);
-  await syncProposalScore(redis, input.proposalId);
+  db.prepare("DELETE FROM ratings WHERE proposal_id = ? AND member_id = ?").run(
+    input.proposalId,
+    input.memberId,
+  );
 
   return listProposals();
-}
-
-function parseProposal(raw: unknown): PropalProposal | null {
-  if (!raw) return null;
-  const data = typeof raw === "string" ? (JSON.parse(raw) as PropalProposal) : (raw as PropalProposal);
-  if (!data.id || !data.proposedBy) return null;
-  return data;
 }
 
 export async function deleteProposal(input: {
   proposalId: string;
   memberId: string;
 }): Promise<PropalListResponse> {
-  const redis = getRedis();
-  if (!redis) {
-    throw new Error("REDIS_NOT_CONFIGURED");
-  }
+  const db = getDb();
+  const row = db
+    .prepare("SELECT proposed_by FROM proposals WHERE id = ?")
+    .get(input.proposalId) as { proposed_by: string } | undefined;
 
-  const raw = await redis.get<string>(proposalKey(input.proposalId));
-  const proposal = parseProposal(raw);
-  if (!proposal) {
+  if (!row) {
     throw new Error("PROPOSAL_NOT_FOUND");
   }
 
-  if (proposal.proposedBy !== input.memberId) {
+  if (row.proposed_by !== input.memberId) {
     throw new Error("FORBIDDEN");
   }
 
-  await redis.del(ratingsKey(input.proposalId));
-  await redis.del(proposalKey(input.proposalId));
-  await redis.zrem(PROPOSALS_KEY, input.proposalId);
+  db.prepare("DELETE FROM proposals WHERE id = ?").run(input.proposalId);
 
   return listProposals();
 }

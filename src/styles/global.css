@@ -135,8 +135,72 @@ html[data-theme="light"] .theme-toggle__icon--sun {
     @apply inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-accent/40 bg-accent/10 transition-colors duration-200 hover:border-accent hover:bg-accent/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
   }
 
+  .propal-member-nav--active {
+    @apply border-accent bg-accent/20 ring-2 ring-accent/30;
+  }
+
   .propal-member-nav__avatar {
     @apply flex h-9 w-9 items-center justify-center rounded-full bg-surface font-display text-sm font-semibold text-accent;
+  }
+
+  .propal-member-admin {
+    @apply rounded-lg border border-border bg-bg-alt p-4;
+  }
+
+  .propal-member-admin__panel {
+    @apply rounded-lg border border-border bg-bg-alt p-4;
+  }
+
+  .propal-member-admin__rows {
+    @apply space-y-2;
+  }
+
+  .propal-member-admin__row {
+    @apply flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2.5;
+  }
+
+  .propal-member-admin__row--edit {
+    @apply items-start sm:items-center;
+  }
+
+  .propal-member-admin__row-label {
+    @apply min-w-0 flex-1 text-sm font-medium text-text;
+  }
+
+  .propal-member-admin__edit-input {
+    @apply min-w-0 flex-1;
+  }
+
+  .propal-member-admin__row-actions {
+    @apply ml-auto flex shrink-0 items-center gap-2;
+  }
+
+  .propal-member-admin__edit-btn {
+    @apply cursor-pointer rounded-md px-2.5 py-1.5 text-sm font-medium text-accent transition-colors duration-200 hover:bg-accent/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
+  .propal-member-admin__delete-btn {
+    @apply inline-flex cursor-pointer items-center justify-center rounded-md border border-border p-1.5 text-text-muted transition-colors duration-200 hover:border-error/50 hover:bg-error/10 hover:text-error focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-error;
+  }
+
+  .propal-member-admin__chip-avatar {
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bg-alt font-display text-xs text-accent;
+  }
+
+  .propal-member-admin__toggle {
+    @apply inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-dashed border-accent/50 bg-accent/5 px-4 py-2.5 text-sm font-medium text-accent transition-colors duration-200 hover:border-accent hover:bg-accent/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
+  .propal-member-admin__add {
+    @apply inline-flex min-h-10 cursor-pointer items-center rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-text transition-colors duration-200 hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
+  .propal-member-admin__auth {
+    @apply rounded-lg border border-border bg-bg-alt p-4;
+  }
+
+  .propal-member-admin__form {
+    @apply space-y-4 rounded-lg border border-border bg-surface p-4;
   }
 
   .propal-vote-hint {

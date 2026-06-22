@@ -1,10 +1,11 @@
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { Redis } from "@upstash/redis";
+import { fileURLToPath } from "node:url";
+import Database from "better-sqlite3";
 
 const MEMBER_ID = "rom";
-const PROPOSALS_KEY = "propal:proposals";
-const proposalKey = (id) => `propal:item:${id}`;
+const schemaPath = join(fileURLToPath(new URL("./propal-schema.sql", import.meta.url)));
 
 const TRACKS = [
   { artist: "Volbeat", title: "Temple Of Ekur" },
@@ -21,18 +22,6 @@ const TRACKS = [
   { artist: "Snap!", title: "The Power" },
   { artist: "Biffy Clyro", title: "Bubbles" },
 ];
-
-function loadEnv() {
-  return Object.fromEntries(
-    readFileSync(".env", "utf8")
-      .split("\n")
-      .filter((line) => line && !line.startsWith("#"))
-      .map((line) => {
-        const index = line.indexOf("=");
-        return [line.slice(0, index), line.slice(index + 1)];
-      }),
-  );
-}
 
 function buildSearchUrl(service, title, artist) {
   const query = encodeURIComponent([title, artist].filter(Boolean).join(" "));
@@ -64,45 +53,51 @@ async function fetchItunesArtwork(title, artist) {
   return artwork ? artwork.replace("100x100bb", "200x200bb") : undefined;
 }
 
-async function createProposal(redis, { title, artist }) {
+async function createProposal(db, { title, artist }) {
   const [deezerUrl, artworkUrl] = await Promise.all([
     fetchDeezerTrackUrl(title, artist).catch(() => null),
     fetchItunesArtwork(title, artist).catch(() => undefined),
   ]);
 
   const id = randomUUID();
-  const proposal = {
+  db.prepare(
+    `INSERT INTO proposals (
+      id, title, artist, proposed_by, created_at,
+      artwork_url, spotify_url, deezer_url, youtube_url
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
     id,
     title,
     artist,
-    proposedBy: MEMBER_ID,
-    createdAt: new Date().toISOString(),
-    spotifyUrl: buildSearchUrl("spotify", title, artist),
-    deezerUrl: deezerUrl ?? buildSearchUrl("deezer", title, artist),
-    youtubeUrl: buildSearchUrl("youtube", title, artist),
-    ...(artworkUrl ? { artworkUrl } : {}),
-  };
+    MEMBER_ID,
+    new Date().toISOString(),
+    artworkUrl ?? null,
+    buildSearchUrl("spotify", title, artist),
+    deezerUrl ?? buildSearchUrl("deezer", title, artist),
+    buildSearchUrl("youtube", title, artist),
+  );
 
-  await redis.set(proposalKey(id), JSON.stringify(proposal));
-  await redis.zadd(PROPOSALS_KEY, { score: 0, member: id });
-  return proposal;
+  return { id, title, artist };
 }
 
-const env = loadEnv();
-const redis = new Redis({
-  url: env.UPSTASH_REDIS_REST_URL,
-  token: env.UPSTASH_REDIS_REST_TOKEN,
-});
+const dbPath = process.env.PROPAL_DB_PATH ?? "./data/propal.db";
+mkdirSync(dirname(dbPath), { recursive: true });
 
-const existingIds = (await redis.zrange(PROPOSALS_KEY, 0, -1)) ?? [];
-const existing = new Set();
+const db = new Database(dbPath);
+db.exec(readFileSync(schemaPath, "utf8"));
 
-for (const id of existingIds) {
-  const raw = await redis.get(proposalKey(id));
-  if (!raw) continue;
-  const proposal = typeof raw === "string" ? JSON.parse(raw) : raw;
-  existing.add(`${proposal.artist.toLowerCase()}|${proposal.title.toLowerCase()}`);
+const member = db.prepare("SELECT 1 AS ok FROM members WHERE id = ?").get(MEMBER_ID);
+if (!member) {
+  console.error(`Le membre "${MEMBER_ID}" n'existe pas. Lancez d'abord : npm run seed:propal-members`);
+  process.exit(1);
 }
+
+const existing = new Set(
+  db
+    .prepare("SELECT lower(artist) AS artist, lower(title) AS title FROM proposals")
+    .all()
+    .map((row) => `${row.artist}|${row.title}`),
+);
 
 let created = 0;
 let skipped = 0;
@@ -115,7 +110,7 @@ for (const track of TRACKS) {
     continue;
   }
 
-  const proposal = await createProposal(redis, track);
+  const proposal = await createProposal(db, track);
   console.log(`Ajouté : ${proposal.artist} — ${proposal.title}`);
   created += 1;
 }

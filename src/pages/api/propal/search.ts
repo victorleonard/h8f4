@@ -70,7 +70,9 @@ export const GET: APIRoute = async ({ url }) => {
             title: track.trackName!.trim(),
             artist: track.artistName!.trim(),
             album: track.collectionName?.trim() ?? "",
-            ...(rawArtwork ? { artworkUrl: resizeArtworkUrl(rawArtwork, 200) } : {}),
+            ...(rawArtwork
+              ? { artworkUrl: resizeArtworkUrl(rawArtwork, 200) }
+              : {}),
           };
         }),
     ).slice(0, 8);

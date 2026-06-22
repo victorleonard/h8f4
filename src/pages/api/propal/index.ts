@@ -9,9 +9,6 @@ export const GET: APIRoute = async () => {
     const data = await listProposals();
     return jsonResponse(data);
   } catch (error) {
-    if (error instanceof Error && error.message === "REDIS_NOT_CONFIGURED") {
-      return errorResponse("Stockage non configuré (Upstash Redis).", 503);
-    }
     console.error("[propal GET]", error);
     return errorResponse("Impossible de charger les propositions.", 500);
   }

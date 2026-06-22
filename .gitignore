@@ -25,3 +25,9 @@ VIDEO-*
 public/live/
 public/images/band-photo*
 public/og-image.png
+
+# Base Propal (SQLite)
+data/propal.db
+data/propal.db-*
+data/propal.db-shm
+data/propal.db-wal
