@@ -1,3 +1,6 @@
+# Interpolation (${HOST_PORT}, etc.) : passer le .env racine explicitement
+#   docker compose --env-file .env -f @docker/docker-compose.yml up -d
+# (env_file: ci-dessous injecte dans le conteneur, pas pour le mapping des ports)
 services:
   web:
     build:

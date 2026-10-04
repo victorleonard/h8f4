@@ -12,6 +12,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 COMPOSE_FILE="@docker/docker-compose.yml"
+# --env-file racine : nécessaire pour interpoler HOST_PORT dans ports:
+# (env_file du compose injecte seulement dans le conteneur)
+COMPOSE=(docker compose --env-file .env -f "$COMPOSE_FILE")
 DO_PULL=1
 DO_BUILD=1
 DO_UP=1
@@ -198,14 +201,19 @@ if [[ "$DO_PULL" -eq 1 ]]; then
   git pull --ff-only
 fi
 
+if [[ ! -f .env ]]; then
+  echo "Fichier .env introuvable à la racine du projet." >&2
+  exit 1
+fi
+
 if [[ "$DO_BUILD" -eq 1 ]]; then
   log "Docker build"
-  docker compose -f "$COMPOSE_FILE" build
+  "${COMPOSE[@]}" build
 fi
 
 if [[ "$DO_UP" -eq 1 ]]; then
   log "Docker up"
-  docker compose -f "$COMPOSE_FILE" up -d
+  "${COMPOSE[@]}" up -d --force-recreate
 fi
 
 if [[ "$SEED_PROPAL" -eq 1 ]]; then
@@ -218,5 +226,8 @@ fi
 
 log "Terminé"
 if [[ "$DO_UP" -eq 1 ]]; then
-  docker compose -f "$COMPOSE_FILE" ps
+  "${COMPOSE[@]}" ps
+  echo
+  echo "Port hôte attendu (HOST_PORT) :"
+  grep -E '^HOST_PORT=' .env || echo "(non défini → défaut 3000)"
 fi

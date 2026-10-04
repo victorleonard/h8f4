@@ -41,11 +41,11 @@ cp .env.example .env
 mkdir -p data
 npm run seed:propal-members
 
-docker compose -f @docker/docker-compose.yml build
-docker compose -f @docker/docker-compose.yml up -d
+docker compose --env-file .env -f @docker/docker-compose.yml build
+docker compose --env-file .env -f @docker/docker-compose.yml up -d
 ```
 
-Le site écoute sur `http://<vps>:3000` (ou le port défini par `HOST_PORT`).
+Le site écoute sur `http://<vps>:$HOST_PORT` (défaut `3000`). **`--env-file .env` est obligatoire** pour que `HOST_PORT` du `.env` racine s’applique au mapping de ports (sinon Compose tombe sur 3000).
 
 ## Mise à jour
 
@@ -57,8 +57,8 @@ npm run deploy
 
 ```bash
 git pull
-docker compose -f @docker/docker-compose.yml build
-docker compose -f @docker/docker-compose.yml up -d
+docker compose --env-file .env -f @docker/docker-compose.yml build
+docker compose --env-file .env -f @docker/docker-compose.yml up -d
 ```
 
 ### Menu de déploiement
@@ -139,9 +139,9 @@ Voir `docs/PROPAL.md` pour le détail du fonctionnement et de l'API.
 ## Commandes utiles
 
 ```bash
-docker compose -f @docker/docker-compose.yml logs -f web
-docker compose -f @docker/docker-compose.yml ps
-docker compose -f @docker/docker-compose.yml down
+docker compose --env-file .env -f @docker/docker-compose.yml logs -f web
+docker compose --env-file .env -f @docker/docker-compose.yml ps
+docker compose --env-file .env -f @docker/docker-compose.yml down
 ```
 
 ## Build local (test)
@@ -149,9 +149,9 @@ docker compose -f @docker/docker-compose.yml down
 ```bash
 mkdir -p data
 npm run seed:propal-members
-docker compose -f @docker/docker-compose.yml build
-docker compose -f @docker/docker-compose.yml up
-# → http://localhost:3000/propal
+docker compose --env-file .env -f @docker/docker-compose.yml build
+docker compose --env-file .env -f @docker/docker-compose.yml up
+# → http://localhost:$HOST_PORT/propal
 ```
 
 ## Fichiers
