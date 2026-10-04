@@ -27,6 +27,13 @@ function itemsToPayload(items: PickedItem[]): SetlistItemInput[] {
   );
 }
 
+function serializeSetlistDraft(name: string, items: PickedItem[]): string {
+  return JSON.stringify({
+    name: name.trim(),
+    items: itemsToPayload(items),
+  });
+}
+
 function pickedToSetlistItems(items: PickedItem[], catalog: Song[]): SetlistItem[] {
   return items.map((item, position) => {
     if (item.kind === "pause") {
@@ -52,30 +59,57 @@ function pickedToSetlistItems(items: PickedItem[], catalog: Song[]): SetlistItem
   });
 }
 
+/** Durées agrégées (setlist) — format homogène, distinct du mm:ss des morceaux. */
+function formatDurationSummary(totalSeconds: number): string {
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  if (hours > 0) return `${hours}h ${String(minutes).padStart(2, "0")}min`;
+  if (minutes > 0 && secs > 0) return `${minutes} min ${String(secs).padStart(2, "0")} s`;
+  if (minutes > 0) return `${minutes} min`;
+  return `${secs} s`;
+}
+
 function formatEstimateSummary(items: SetlistItem[]): string {
   const summary = summarizeSetlistDurations(items);
-  const parts: string[] = [
-    `Jeu&nbsp;: <strong class="text-text">${escapeHtml(formatDuration(summary.estimatedDurationSeconds))}</strong>`,
+  const songCount = items.filter((item) => item.kind === "song").length;
+  const multiSet = summary.groups.length > 1;
+  const hasPauses = summary.pauseDurationSeconds > 0;
+
+  const primary: string[] = [];
+  if (songCount > 0) {
+    primary.push(`${songCount} titre${songCount > 1 ? "s" : ""}`);
+  }
+  primary.push(
+    `Jeu&nbsp;: <strong class="text-text">${escapeHtml(formatDurationSummary(summary.estimatedDurationSeconds))}</strong>`,
+  );
+
+  const chunks: string[] = [
+    `<span class="setlist-duration-stats__line">${primary.join(" · ")}</span>`,
   ];
-  if (summary.groups.length > 1) {
-    parts.push(
-      summary.groups
-        .map(
-          (group) =>
-            `${escapeHtml(group.label)}&nbsp;: <strong class="text-text">${escapeHtml(formatDuration(group.durationSeconds))}</strong>`,
-        )
-        .join(" · "),
+
+  if (multiSet) {
+    const rows = summary.groups
+      .map(
+        (group) => `
+        <li class="setlist-duration-stats__set">
+          <span class="setlist-duration-stats__set-label">${escapeHtml(group.label)}</span>
+          <span class="setlist-duration-stats__set-value"><strong class="text-text">${escapeHtml(formatDurationSummary(group.durationSeconds))}</strong></span>
+          <span class="setlist-duration-stats__set-meta">${group.songCount} titre${group.songCount > 1 ? "s" : ""}</span>
+        </li>`,
+      )
+      .join("");
+    chunks.push(`<ul class="setlist-duration-stats__sets">${rows}</ul>`);
+  }
+
+  if (hasPauses) {
+    chunks.push(
+      `<span class="setlist-duration-stats__line setlist-duration-stats__line--secondary">Pauses&nbsp;: <strong class="text-text">${escapeHtml(formatDurationSummary(summary.pauseDurationSeconds))}</strong> · Total&nbsp;: <strong class="text-text">${escapeHtml(formatDurationSummary(summary.estimatedTotalSeconds))}</strong></span>`,
     );
   }
-  if (summary.pauseDurationSeconds > 0) {
-    parts.push(
-      `Pauses&nbsp;: <strong class="text-text">${escapeHtml(formatDuration(summary.pauseDurationSeconds))}</strong>`,
-    );
-    parts.push(
-      `Total&nbsp;: <strong class="text-text">${escapeHtml(formatDuration(summary.estimatedTotalSeconds))}</strong>`,
-    );
-  }
-  return parts.join(" · ");
+
+  return `<div class="setlist-duration-stats">${chunks.join("")}</div>`;
 }
 
 const SEARCH_DEBOUNCE_MS = 350;
@@ -163,6 +197,58 @@ async function apiJson(
   return payload;
 }
 
+const TOAST_ICON_SUCCESS = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>`;
+
+let setlistToastHost: HTMLElement | null = null;
+let setlistToastTimer: ReturnType<typeof setTimeout> | null = null;
+let setlistToastEl: HTMLElement | null = null;
+
+function ensureSetlistToastHost(aboveActions: boolean): HTMLElement {
+  if (!setlistToastHost) {
+    setlistToastHost = document.createElement("div");
+    setlistToastHost.className = "setlist-toast-host";
+    setlistToastHost.setAttribute("aria-live", "polite");
+    document.body.appendChild(setlistToastHost);
+  }
+  setlistToastHost.classList.toggle("setlist-toast-host--above-actions", aboveActions);
+  return setlistToastHost;
+}
+
+function showSetlistToast(message: string, aboveActions = false): void {
+  const host = ensureSetlistToastHost(aboveActions);
+  if (setlistToastTimer) {
+    window.clearTimeout(setlistToastTimer);
+    setlistToastTimer = null;
+  }
+  setlistToastEl?.remove();
+  setlistToastEl = null;
+
+  const toast = document.createElement("div");
+  toast.className = "setlist-toast setlist-toast--success";
+  toast.setAttribute("role", "status");
+  toast.innerHTML = `<span class="setlist-toast__icon">${TOAST_ICON_SUCCESS}</span><span class="setlist-toast__text">${escapeHtml(message)}</span>`;
+  host.appendChild(toast);
+  setlistToastEl = toast;
+
+  requestAnimationFrame(() => {
+    toast.classList.add("setlist-toast--visible");
+  });
+
+  const dismiss = (): void => {
+    toast.classList.remove("setlist-toast--visible");
+    toast.classList.add("setlist-toast--exit");
+    window.setTimeout(() => {
+      toast.remove();
+      if (setlistToastEl === toast) setlistToastEl = null;
+    }, 280);
+  };
+
+  setlistToastTimer = window.setTimeout(() => {
+    setlistToastTimer = null;
+    dismiss();
+  }, 3200);
+}
+
 function setupUi(root: HTMLElement): {
   showStatus: (message: string) => void;
   showError: (message: string) => void;
@@ -170,13 +256,12 @@ function setupUi(root: HTMLElement): {
 } {
   const statusEl = root.querySelector<HTMLElement>("[data-setlist-status]");
   const errorEl = root.querySelector<HTMLElement>("[data-setlist-error]");
+  const aboveActions = root.dataset.setlistPage === "detail";
 
   function showStatus(message: string): void {
-    if (!statusEl || !errorEl) return;
-    statusEl.textContent = message;
-    statusEl.classList.remove("hidden");
-    errorEl.classList.add("hidden");
-    window.setTimeout(() => statusEl.classList.add("hidden"), 3000);
+    if (errorEl) errorEl.classList.add("hidden");
+    statusEl?.classList.add("hidden");
+    showSetlistToast(message, aboveActions);
   }
 
   function showError(message: string): void {
@@ -387,11 +472,6 @@ function initListPage(root: HTMLElement): void {
                 ${(setlist.pauseDurationSeconds ?? 0) > 0 ? ` · ${formatDuration(setlist.pauseDurationSeconds)} pause` : ""}
                 ${(setlist.groups?.length ?? 0) > 1 ? ` · ${setlist.groups.length} sets` : ""}
               </p>
-              ${
-                setlist.notes
-                  ? `<p class="mt-2 text-sm text-text-muted line-clamp-2 whitespace-pre-wrap">${escapeHtml(setlist.notes)}</p>`
-                  : ""
-              }
             </div>
             <span class="setlist-card__chevron text-text-muted" aria-hidden="true">${ICON_CHEVRON}</span>
           </a>
@@ -552,7 +632,7 @@ function initListPage(root: HTMLElement): void {
       const payload = await apiJson(
         "/api/setlist/setlists",
         "POST",
-        { name: "Nouvelle setlist", notes: "", items: [] },
+        { name: "Nouvelle setlist", items: [] },
       );
       if (!payload.setlist?.id) throw new Error("Création impossible.");
       window.location.href = apiUrl(`/setlist/${payload.setlist.id}/`);
@@ -585,7 +665,6 @@ function initListPage(root: HTMLElement): void {
           "POST",
           {
             name: copyName.slice(0, 120),
-            notes: setlist.notes,
             items: (setlist.items ?? setlist.songs.map((song) => ({
               kind: "song" as const,
               songId: song.songId,
@@ -633,12 +712,11 @@ function initDetailPage(root: HTMLElement): void {
   const setlistForm = root.querySelector<HTMLFormElement>("[data-setlist-form]");
   const setlistEditId = root.querySelector<HTMLInputElement>("[data-setlist-edit-id]");
   const setlistName = root.querySelector<HTMLInputElement>("[data-setlist-name]");
-  const setlistNotes = root.querySelector<HTMLTextAreaElement>("[data-setlist-notes]");
-  const setlistMetaReadonly = root.querySelector<HTMLElement>("[data-setlist-meta-readonly]");
   const setlistMetaFields = root.querySelector<HTMLElement>("[data-setlist-meta-fields]");
   const setlistNameDisplay = root.querySelector<HTMLElement>("[data-setlist-name-display]");
-  const setlistNotesDisplay = root.querySelector<HTMLElement>("[data-setlist-notes-display]");
   const setlistMetaEdit = root.querySelector<HTMLButtonElement>("[data-setlist-meta-edit]");
+  const setlistMetaDone = root.querySelector<HTMLButtonElement>("[data-setlist-meta-done]");
+  const setlistTitleRow = root.querySelector<HTMLElement>("[data-setlist-title-row]");
   const setlistFormTitle = root.querySelector<HTMLElement>("[data-setlist-form-title]");
   const setlistPickedEl = root.querySelector<HTMLElement>("[data-setlist-picked]");
   const setlistAddOpen = root.querySelector<HTMLButtonElement>("[data-setlist-add-open]");
@@ -646,6 +724,7 @@ function initDetailPage(root: HTMLElement): void {
   const printBtn = root.querySelector<HTMLButtonElement>("[data-setlist-print]");
   const fullscreenOpenBtn = root.querySelector<HTMLButtonElement>("[data-setlist-fullscreen-open]");
   const deleteBtn = root.querySelector<HTMLButtonElement>("[data-setlist-delete]");
+  const setlistSubmit = root.querySelector<HTMLButtonElement>("[data-setlist-submit]");
 
   const addModal = document.querySelector<HTMLElement>("[data-setlist-add-modal]");
   const setlistAddSong = document.querySelector<HTMLSelectElement>("[data-setlist-add-song]");
@@ -664,10 +743,8 @@ function initDetailPage(root: HTMLElement): void {
 
   if (
     !setlistForm ||
-    !setlistMetaReadonly ||
     !setlistMetaFields ||
     !setlistNameDisplay ||
-    !setlistNotesDisplay ||
     !setlistMetaEdit ||
     !setlistPickedEl ||
     !setlistAddOpen ||
@@ -689,8 +766,22 @@ function initDetailPage(root: HTMLElement): void {
   let songs: Song[] = [];
   let current: Setlist | null = null;
   let pickedItems: PickedItem[] = [];
+  let savedDraft = "";
 
   const ui = setupUi(root);
+
+  function syncSaveButton(): void {
+    if (!setlistSubmit) return;
+    const dirty =
+      savedDraft !== "" &&
+      serializeSetlistDraft(setlistName?.value ?? "", pickedItems) !== savedDraft;
+    setlistSubmit.disabled = !dirty;
+  }
+
+  function markSavedDraft(): void {
+    savedDraft = serializeSetlistDraft(setlistName?.value ?? "", pickedItems);
+    syncSaveButton();
+  }
 
   void (async () => {
     try {
@@ -712,24 +803,20 @@ function initDetailPage(root: HTMLElement): void {
 
   function showMetaFields(): void {
     setlistMetaFields.classList.remove("hidden");
-    setlistMetaReadonly.classList.add("hidden");
-    setlistMetaEdit.classList.add("hidden");
+    setlistTitleRow?.classList.add("hidden");
     if (setlistName) setlistName.required = true;
   }
 
   function showMetaReadonly(): void {
     const name = setlistName?.value.trim() || current?.name || "Sans nom";
-    const notes = setlistNotes?.value.trim() || "";
     setlistNameDisplay.textContent = name;
     if (setlistFormTitle && setlistFormTitle !== setlistNameDisplay) {
       setlistFormTitle.textContent = name;
     }
-    setlistNotesDisplay.textContent = notes || "Aucune note";
-    setlistNotesDisplay.classList.toggle("italic", !notes);
-    setlistMetaReadonly.classList.remove("hidden");
     setlistMetaFields.classList.add("hidden");
-    setlistMetaEdit.classList.remove("hidden");
+    setlistTitleRow?.classList.remove("hidden");
     if (setlistName) setlistName.required = false;
+    syncSaveButton();
   }
 
   function pickedSongIds(): string[] {
@@ -839,6 +926,7 @@ function initDetailPage(root: HTMLElement): void {
       pickedSortable?.destroy();
       pickedSortable = null;
       setlistPickedEl.innerHTML = `<p class="text-sm text-text-muted">Aucun titre ni pause pour l’instant.</p>`;
+      syncSaveButton();
       return;
     }
 
@@ -913,12 +1001,12 @@ function initDetailPage(root: HTMLElement): void {
 
     setlistPickedEl.innerHTML = chunks.join("");
     bindPickedSortable();
+    syncSaveButton();
   }
 
   function loadSetlistIntoForm(setlist: Setlist): void {
     if (setlistEditId) setlistEditId.value = setlist.id;
     if (setlistName) setlistName.value = setlist.name;
-    if (setlistNotes) setlistNotes.value = setlist.notes;
     const sourceItems =
       setlist.items ??
       setlist.songs.map((song) => ({
@@ -941,6 +1029,7 @@ function initDetailPage(root: HTMLElement): void {
     showMetaReadonly();
     renderPickedItems();
     renderAddSongSelect();
+    markSavedDraft();
   }
 
   const printSheet = printRoot.parentElement;
@@ -1033,21 +1122,24 @@ function initDetailPage(root: HTMLElement): void {
   async function openFullscreen(setlist: Setlist, native = true): Promise<void> {
     const items = setlist.items ?? [];
     const summary = summarizeSetlistDurations(items);
-    const estimateParts = [
-      `${formatDuration(summary.estimatedDurationSeconds)} de jeu`,
-      `${setlist.songs.length} titre${setlist.songs.length > 1 ? "s" : ""}`,
+    const estimateLines = [
+      `${setlist.songs.length} titre${setlist.songs.length > 1 ? "s" : ""} · Jeu : ${formatDurationSummary(summary.estimatedDurationSeconds)}`,
     ];
     if (summary.groups.length > 1) {
-      estimateParts.push(
-        summary.groups.map((group) => `${group.label} ${formatDuration(group.durationSeconds)}`).join(" · "),
+      estimateLines.push(
+        ...summary.groups.map(
+          (group) =>
+            `${group.label} : ${formatDurationSummary(group.durationSeconds)} (${group.songCount} titre${group.songCount > 1 ? "s" : ""})`,
+        ),
       );
     }
     if (summary.pauseDurationSeconds > 0) {
-      estimateParts.push(`${formatDuration(summary.pauseDurationSeconds)} de pause`);
-      estimateParts.push(`total ${formatDuration(summary.estimatedTotalSeconds)}`);
+      estimateLines.push(
+        `Pauses : ${formatDurationSummary(summary.pauseDurationSeconds)} · Total : ${formatDurationSummary(summary.estimatedTotalSeconds)}`,
+      );
     }
     fullscreenTitle.textContent = setlist.name;
-    fullscreenEstimate.textContent = estimateParts.join(" · ");
+    fullscreenEstimate.textContent = estimateLines.join("\n");
 
     if (items.length === 0) {
       fullscreenList.innerHTML = `<li class="setlist-fullscreen__empty">Aucun titre dans cette setlist.</li>`;
@@ -1178,6 +1270,28 @@ function initDetailPage(root: HTMLElement): void {
     setlistName?.focus();
   });
 
+  setlistMetaDone?.addEventListener("click", () => {
+    showMetaReadonly();
+  });
+
+  root.querySelectorAll<HTMLDetailsElement>(".setlist-more-menu").forEach((menu) => {
+    menu.querySelectorAll<HTMLElement>("[role='menuitem']").forEach((item) => {
+      item.addEventListener("click", () => {
+        menu.open = false;
+      });
+    });
+    menu.addEventListener("toggle", () => {
+      if (!menu.open) return;
+      const close = (event: MouseEvent) => {
+        const target = event.target;
+        if (target instanceof Node && menu.contains(target)) return;
+        menu.open = false;
+        document.removeEventListener("click", close);
+      };
+      window.setTimeout(() => document.addEventListener("click", close), 0);
+    });
+  });
+
   setlistAddOpen.addEventListener("click", () => {
     openAddModal();
   });
@@ -1254,14 +1368,18 @@ function initDetailPage(root: HTMLElement): void {
     renderPickedItems();
   });
 
+  setlistName?.addEventListener("input", () => {
+    syncSaveButton();
+  });
+
   setlistForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (setlistSubmit?.disabled) return;
     ui.clearMessages();
     try {
       const payload = await apiJson("/api/setlist/setlists", "PATCH", {
         id: setlistId,
         name: setlistName?.value ?? "",
-        notes: setlistNotes?.value ?? "",
         items: itemsToPayload(pickedItems),
       });
       songs = payload.songs;

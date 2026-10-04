@@ -887,32 +887,206 @@ html[data-theme="light"] .theme-toggle__icon--sun {
   }
 
   /* Page setlist — gestion répertoire & setlists */
+  .setlist-page {
+    @apply overflow-x-hidden;
+  }
+
   .setlist-page .propal-page__bar {
     @apply py-2.5 sm:py-3;
   }
 
-  .setlist-sticky-bar {
-    @apply sticky top-[calc(3.75rem+env(safe-area-inset-top))] z-20 -mx-4 mb-1 flex flex-nowrap items-center gap-2 border-b border-border/60 bg-bg/95 px-3 py-2.5 backdrop-blur-md sm:top-[calc(4rem+env(safe-area-inset-top))] sm:gap-3 sm:px-4 sm:py-3;
+  .setlist-page--detail .propal-page__bar {
+    @apply py-2 sm:py-2.5;
+    padding-top: max(0.5rem, env(safe-area-inset-top));
   }
 
-  .setlist-sticky-bar__back {
-    @apply min-h-10 min-w-10 shrink-0 justify-center px-0 sm:min-w-0 sm:justify-start sm:gap-1.5 sm:px-1;
+  .setlist-page--detail .setlist-detail-section {
+    @apply pt-0;
   }
 
-  .setlist-sticky-bar__save {
-    @apply min-h-10 min-w-0 flex-1 px-3 py-2 text-sm hover:translate-y-0 sm:flex-none sm:px-4;
+  /* Mobile : coller le contenu aux bords pour maximiser la largeur utile */
+  .setlist-page .container-content {
+    @apply px-0 sm:px-4 md:px-6 lg:px-8;
   }
 
-  .setlist-sticky-bar__actions {
-    @apply ml-auto flex shrink-0 items-center gap-0.5;
+  .setlist-page .propal-page__bar .container-content {
+    @apply px-3 sm:px-4 md:px-6 lg:px-8;
   }
 
-  .setlist-sticky-bar__actions .setlist-icon-btn {
-    @apply min-h-10 min-w-9 sm:min-w-10;
+  .setlist-page__inset {
+    @apply px-3 sm:px-0;
   }
 
-  .setlist-sticky-bar__add {
-    @apply inline-flex min-h-10 shrink-0 items-center gap-1.5 px-3 py-2 text-sm hover:translate-y-0 sm:px-3.5;
+  .setlist-page .propal-sticky-nav {
+    @apply mx-0 px-0 sm:static sm:mx-0 sm:px-0;
+  }
+
+  .setlist-page .propal-view-tabs {
+    @apply rounded-none border-x-0 sm:rounded-lg sm:border;
+  }
+
+  .setlist-form-panel {
+    @apply rounded-none border-0 bg-transparent p-0 sm:rounded-lg sm:border sm:border-border sm:bg-surface sm:p-5;
+  }
+
+  .setlist-song-form-panel {
+    @apply rounded-none border-y border-border bg-surface px-3 py-4 sm:rounded-lg sm:border sm:p-5;
+  }
+
+  .setlist-detail-toolbar {
+    @apply sticky top-[calc(3.75rem+env(safe-area-inset-top))] z-20 -mx-0 border-b border-border/60 bg-bg/95 backdrop-blur-md sm:top-[calc(4rem+env(safe-area-inset-top))];
+  }
+
+  .setlist-page--detail .setlist-detail-toolbar {
+    @apply top-[calc(2.75rem+env(safe-area-inset-top))] sm:top-[calc(3rem+env(safe-area-inset-top))];
+  }
+
+  .setlist-detail-toolbar__top {
+    @apply flex items-center justify-between gap-2 pt-2.5 sm:pt-3;
+  }
+
+  .setlist-page--detail .setlist-detail-toolbar__top {
+    @apply pt-1 sm:pt-1.5;
+  }
+
+  .setlist-detail-toolbar__back {
+    @apply min-h-10 px-0 text-sm;
+  }
+
+  .setlist-page--detail .setlist-detail-toolbar__back {
+    @apply min-h-9;
+  }
+
+  .setlist-detail-toolbar__head {
+    @apply flex items-start gap-1 pb-1 pt-1;
+  }
+
+  .setlist-page--detail .setlist-detail-toolbar__head {
+    @apply pb-0.5 pt-0;
+  }
+
+  .setlist-detail-toolbar__title {
+    @apply min-w-0 flex-1 font-display text-2xl leading-tight text-text sm:text-[28px];
+  }
+
+  .setlist-detail-toolbar__stats {
+    @apply pb-3 text-sm text-text-muted;
+  }
+
+  .setlist-page--detail .setlist-detail-toolbar__stats {
+    @apply pb-2;
+  }
+
+  .setlist-duration-stats {
+    @apply flex flex-col gap-2;
+  }
+
+  .setlist-duration-stats__line {
+    @apply block leading-snug;
+  }
+
+  .setlist-duration-stats__line--secondary {
+    @apply text-xs;
+  }
+
+  .setlist-duration-stats__sets {
+    @apply grid list-none gap-1.5 p-0 sm:grid-cols-2;
+  }
+
+  .setlist-duration-stats__set {
+    @apply grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-0.5 border border-border bg-bg-alt px-2.5 py-2 text-xs sm:col-span-1;
+  }
+
+  .setlist-duration-stats__set-label {
+    @apply font-semibold uppercase tracking-wide text-accent;
+  }
+
+  .setlist-duration-stats__set-value {
+    @apply text-right tabular-nums;
+  }
+
+  .setlist-duration-stats__set-meta {
+    @apply col-span-2 text-text-muted;
+  }
+
+  .setlist-detail-actions {
+    @apply pointer-events-none fixed inset-x-0 bottom-0 z-30 border-t border-border/60 bg-bg/95 backdrop-blur-md;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .setlist-detail-actions__inner {
+    @apply pointer-events-auto mx-auto flex max-w-3xl gap-2 px-3 pt-3 sm:px-4 md:px-6 lg:px-8;
+  }
+
+  .setlist-detail-actions__add,
+  .setlist-detail-actions__save {
+    @apply inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 px-3 py-2.5 text-sm hover:translate-y-0 sm:flex-none sm:min-w-[9.5rem];
+  }
+
+  .setlist-detail-actions__save:disabled {
+    @apply cursor-not-allowed opacity-40 hover:translate-y-0 hover:bg-accent;
+  }
+
+  .setlist-detail-form {
+    @apply mt-2 pb-[calc(5.25rem+env(safe-area-inset-bottom))] sm:mt-3;
+  }
+
+  .setlist-toast-host {
+    @apply pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex justify-center px-4;
+  }
+
+  .setlist-toast-host--above-actions {
+    @apply bottom-[calc(5.25rem+env(safe-area-inset-bottom))];
+  }
+
+  .setlist-toast {
+    @apply pointer-events-auto flex max-w-md translate-y-2 items-center gap-2.5 rounded-lg border border-success/35 bg-surface px-4 py-3 text-sm font-medium text-text opacity-0 shadow-lg transition-all duration-300 ease-out;
+  }
+
+  .setlist-toast--visible {
+    @apply translate-y-0 opacity-100;
+  }
+
+  .setlist-toast--exit {
+    @apply translate-y-1 opacity-0;
+  }
+
+  .setlist-toast__icon {
+    @apply flex shrink-0 text-success;
+  }
+
+  .setlist-toast__text {
+    @apply min-w-0 leading-snug;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .setlist-toast {
+      @apply transition-none;
+    }
+  }
+
+  .setlist-more-menu {
+    @apply relative shrink-0;
+  }
+
+  .setlist-more-menu__trigger {
+    @apply list-none;
+  }
+
+  .setlist-more-menu__trigger::-webkit-details-marker {
+    display: none;
+  }
+
+  .setlist-more-menu__panel {
+    @apply absolute right-0 top-full z-30 mt-1 min-w-[12.5rem] rounded-lg border border-border bg-surface py-1 shadow-lg;
+  }
+
+  .setlist-more-menu__item {
+    @apply flex w-full cursor-pointer items-center gap-2.5 px-3 py-2.5 text-left text-sm text-text transition-colors duration-200 hover:bg-bg-alt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent;
+  }
+
+  .setlist-more-menu__item--danger {
+    @apply text-error hover:bg-error/10 hover:text-error;
   }
 
   body.setlist-add-modal-open {
@@ -947,9 +1121,13 @@ html[data-theme="light"] .theme-toggle__icon--sun {
     @apply inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg px-1 text-sm font-medium text-text-muted transition-colors duration-200 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
   }
 
+  .setlist-page--detail .setlist-back-btn {
+    @apply min-h-9;
+  }
+
   .setlist-item,
   .setlist-card {
-    @apply rounded-lg border border-border bg-surface p-4 transition-colors duration-200;
+    @apply w-full rounded-none border-x-0 border-b border-t-0 border-border bg-surface p-4 transition-colors duration-200 first:border-t sm:rounded-lg sm:border;
   }
 
   .setlist-card--link {
@@ -957,7 +1135,7 @@ html[data-theme="light"] .theme-toggle__icon--sun {
   }
 
   .setlist-card__main {
-    @apply flex min-w-0 flex-1 items-center gap-3 p-4 transition-colors duration-200 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+    @apply flex min-w-0 flex-1 items-center gap-3 p-3 transition-colors duration-200 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:p-4;
   }
 
   .setlist-card__chevron {
@@ -969,7 +1147,7 @@ html[data-theme="light"] .theme-toggle__icon--sun {
   }
 
   .setlist-item {
-    @apply flex items-center gap-3;
+    @apply flex items-center gap-3 px-3 py-3 sm:p-4;
   }
 
   .setlist-item__actions,
@@ -986,7 +1164,7 @@ html[data-theme="light"] .theme-toggle__icon--sun {
   }
 
   .setlist-picked-row {
-    @apply relative flex items-center gap-2 rounded-lg border border-border bg-bg-alt px-2 py-2.5 sm:gap-3 sm:px-3;
+    @apply relative flex w-full items-center gap-2 rounded-none border border-border bg-bg-alt px-3 py-2.5 sm:gap-3 sm:px-3;
   }
 
   .setlist-picked-row--pause {
@@ -994,7 +1172,7 @@ html[data-theme="light"] .theme-toggle__icon--sun {
   }
 
   .setlist-group-header {
-    @apply flex items-baseline justify-between gap-3 px-1 pt-2 text-xs font-semibold uppercase tracking-wide text-text-muted first:pt-0;
+    @apply flex items-baseline justify-between gap-3 px-3 pt-3 text-xs font-semibold uppercase tracking-wide text-text-muted first:pt-2 sm:px-1 sm:pt-2 sm:first:pt-0;
   }
 
   .setlist-group-header__label {
@@ -1137,7 +1315,7 @@ html[data-theme="light"] .theme-toggle__icon--sun {
   }
 
   .setlist-fullscreen__estimate {
-    @apply mb-4 text-sm font-medium text-accent sm:text-base;
+    @apply mb-4 whitespace-pre-line text-sm font-medium leading-relaxed text-accent sm:text-base;
   }
 
   .setlist-fullscreen__brand {

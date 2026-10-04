@@ -71,10 +71,6 @@ export function validateSetlistName(name: unknown): name is string {
   return typeof name === "string" && name.trim().length >= 2 && name.trim().length <= 120;
 }
 
-export function validateSetlistNotes(notes: unknown): notes is string {
-  return typeof notes === "string" && notes.length <= 1000;
-}
-
 /** Date de concert optionnelle (YYYY-MM-DD). */
 export function normalizeConcertDate(value: unknown): string | null | undefined {
   if (value === undefined) return undefined;

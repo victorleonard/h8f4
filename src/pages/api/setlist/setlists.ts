@@ -6,7 +6,6 @@ import {
   normalizeSetlistItemsInput,
   parseJsonBody,
   validateSetlistName,
-  validateSetlistNotes,
 } from "../../../lib/api-utils";
 import { createSetlist, deleteSetlist, listSetlists, updateSetlist } from "../../../lib/setlists-store";
 import { listSongs } from "../../../lib/songs-store";
@@ -20,7 +19,6 @@ function listPayload() {
 export const POST: APIRoute = async ({ request }) => {
   const body = await parseJsonBody<{
     name?: unknown;
-    notes?: unknown;
     concertDate?: unknown;
     items?: unknown;
     songIds?: unknown;
@@ -30,11 +28,6 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (!validateSetlistName(body.name)) {
     return errorResponse("Le nom de la setlist doit contenir entre 2 et 120 caractères.", 400);
-  }
-
-  const notes = body.notes ?? "";
-  if (!validateSetlistNotes(notes)) {
-    return errorResponse("Les notes ne doivent pas dépasser 1000 caractères.", 400);
   }
 
   const concertDate = normalizeConcertDate(body.concertDate ?? null);
@@ -48,7 +41,7 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const setlist = createSetlist({
       name: body.name.trim(),
-      notes: typeof notes === "string" ? notes.trim() : "",
+      notes: "",
       ...(concertDate ? { concertDate } : {}),
       items: normalized.items,
     });
@@ -69,7 +62,6 @@ export const PATCH: APIRoute = async ({ request }) => {
   const body = await parseJsonBody<{
     id?: unknown;
     name?: unknown;
-    notes?: unknown;
     concertDate?: unknown;
     items?: unknown;
     songIds?: unknown;
@@ -82,11 +74,6 @@ export const PATCH: APIRoute = async ({ request }) => {
   }
   if (!validateSetlistName(body.name)) {
     return errorResponse("Le nom de la setlist doit contenir entre 2 et 120 caractères.", 400);
-  }
-
-  const notes = body.notes ?? "";
-  if (!validateSetlistNotes(notes)) {
-    return errorResponse("Les notes ne doivent pas dépasser 1000 caractères.", 400);
   }
 
   const concertDate = normalizeConcertDate(body.concertDate);
@@ -105,7 +92,7 @@ export const PATCH: APIRoute = async ({ request }) => {
     const setlist = updateSetlist({
       id: body.id,
       name: body.name.trim(),
-      notes: typeof notes === "string" ? notes.trim() : "",
+      notes: "",
       concertDate: concertDate ?? null,
       items: normalized.items,
     });
