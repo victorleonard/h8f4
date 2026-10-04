@@ -15,6 +15,8 @@
     "docker:down": "docker compose -f @docker/docker-compose.yml down",
     "seed:propal-members": "node scripts/seed-propal-members.mjs",
     "seed:propal-rom": "node scripts/seed-propal-rom.mjs",
+    "seed:setlist-songs": "node scripts/seed-setlist-songs.mjs",
+    "seed:setlist": "node scripts/seed-setlist-songs.mjs && node scripts/seed-setlist.mjs",
     "preview": "astro preview"
   },
   "dependencies": {
@@ -23,10 +25,12 @@
     "@astrojs/tailwind": "^6.0.2",
     "astro": "^5.7.10",
     "better-sqlite3": "^12.11.1",
+    "sortablejs": "^1.15.7",
     "tailwindcss": "^3.4.17"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
+    "@types/sortablejs": "^1.15.9",
     "ffmpeg-static": "^5.3.0",
     "ffprobe-static": "^3.1.0",
     "sharp": "^0.35.0"

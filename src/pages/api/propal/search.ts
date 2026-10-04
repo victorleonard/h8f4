@@ -10,6 +10,7 @@ interface ItunesTrack {
   collectionName?: string;
   artworkUrl100?: string;
   artworkUrl60?: string;
+  trackTimeMillis?: number;
 }
 
 export interface SongSearchResult {
@@ -17,6 +18,8 @@ export interface SongSearchResult {
   artist: string;
   album: string;
   artworkUrl?: string;
+  /** Durée en secondes (si fournie par iTunes). */
+  durationSeconds?: number;
 }
 
 function dedupeResults(tracks: SongSearchResult[]): SongSearchResult[] {
@@ -66,6 +69,10 @@ export const GET: APIRoute = async ({ url }) => {
         .filter((track) => track.trackName && track.artistName)
         .map((track) => {
           const rawArtwork = track.artworkUrl100 ?? track.artworkUrl60;
+          const durationSeconds =
+            typeof track.trackTimeMillis === "number" && track.trackTimeMillis > 0
+              ? Math.min(1800, Math.max(1, Math.round(track.trackTimeMillis / 1000)))
+              : undefined;
           return {
             title: track.trackName!.trim(),
             artist: track.artistName!.trim(),
@@ -73,6 +80,7 @@ export const GET: APIRoute = async ({ url }) => {
             ...(rawArtwork
               ? { artworkUrl: resizeArtworkUrl(rawArtwork, 200) }
               : {}),
+            ...(durationSeconds ? { durationSeconds } : {}),
           };
         }),
     ).slice(0, 8);

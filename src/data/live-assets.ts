@@ -259,7 +259,7 @@ export const liveVideos: LiveVideo[] = [
     "poster": "/live/posters/video-2025-12-21-02-42-00.jpg",
     "title": "Live H8F4 — 2025",
     "year": "2025",
-    "orientation": "landscape",
+    "orientation": "portrait",
     "featured": true
   },
   {
@@ -267,7 +267,7 @@ export const liveVideos: LiveVideo[] = [
     "poster": "/live/posters/video-2025-12-21-02-39-41.jpg",
     "title": "Live H8F4 — 2025",
     "year": "2025",
-    "orientation": "landscape",
+    "orientation": "portrait",
     "featured": true
   },
   {
@@ -275,7 +275,7 @@ export const liveVideos: LiveVideo[] = [
     "poster": "/live/posters/video-2025-12-21-02-36-52.jpg",
     "title": "Live H8F4 — 2025",
     "year": "2025",
-    "orientation": "landscape",
+    "orientation": "portrait",
     "featured": true
   },
   {
@@ -339,7 +339,7 @@ export const liveVideos: LiveVideo[] = [
     "poster": "/live/posters/video-2023-06-22-11-48-10.jpg",
     "title": "Live H8F4 — 2023",
     "year": "2023",
-    "orientation": "landscape",
+    "orientation": "portrait",
     "featured": false
   },
   {

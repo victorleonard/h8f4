@@ -33,7 +33,7 @@ export default defineConfig({
       ? []
       : [
           sitemap({
-            filter: (page) => !page.includes("/propal"),
+            filter: (page) => !page.includes("/propal") && !page.includes("/setlist"),
           }),
         ]),
   ],
