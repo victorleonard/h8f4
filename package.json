@@ -13,6 +13,7 @@
     "docker:build": "docker compose -f @docker/docker-compose.yml build",
     "docker:up": "docker compose -f @docker/docker-compose.yml up -d",
     "docker:down": "docker compose -f @docker/docker-compose.yml down",
+    "deploy": "bash scripts/deploy.sh",
     "seed:propal-members": "node scripts/seed-propal-members.mjs",
     "seed:propal-rom": "node scripts/seed-propal-rom.mjs",
     "seed:setlist-songs": "node scripts/seed-setlist-songs.mjs",

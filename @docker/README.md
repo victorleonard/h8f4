@@ -50,12 +50,30 @@ Le site écoute sur `http://<vps>:3000` (ou le port défini par `HOST_PORT`).
 ## Mise à jour
 
 ```bash
+npm run deploy
+```
+
+Équivalent manuel :
+
+```bash
 git pull
 docker compose -f @docker/docker-compose.yml build
 docker compose -f @docker/docker-compose.yml up -d
 ```
 
-> La base SQLite dans `data/` est persistée via le volume Docker — les propositions et notes survivent aux rebuilds.
+### Options de seed
+
+```bash
+npm run deploy -- --seed-setlist          # titres + setlist Concert
+npm run deploy -- --seed-propal           # membres Propal
+npm run deploy -- --seed-all              # setlist + Propal
+npm run deploy -- --seed-only --seed-setlist   # seed sans rebuild
+npm run deploy -- --help
+```
+
+Le script écarte automatiquement `src/data/live-assets.ts` (fichier généré) avant le `git pull` pour éviter les conflits sur la prod. Utiliser `--keep-local` pour conserver les changements locaux.
+
+> La base SQLite dans `data/` est persistée via le volume Docker — les propositions et notes survivent aux rebuilds. Les seeds s’exécutent sur l’hôte contre `data/propal.db` (nécessite `npm install` sur le serveur).
 
 ## Reverse proxy (Nginx)
 
