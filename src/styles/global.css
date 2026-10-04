@@ -1345,8 +1345,7 @@ html[data-theme="light"] .theme-toggle__icon--sun {
   }
 
   .setlist-fullscreen__print-root--measure .setlist-fullscreen__estimate {
-    margin: 0 0 8px !important;
-    font-size: 11pt !important;
+    display: none !important;
   }
 
   .setlist-fullscreen__print-root--measure .setlist-fullscreen__brand {
@@ -1525,9 +1524,7 @@ html[data-theme="light"] .theme-toggle__icon--sun {
   }
 
   .setlist-fullscreen__estimate {
-    margin: 0 0 8px !important;
-    font-size: 11pt !important;
-    color: #444 !important;
+    display: none !important;
   }
 
   .setlist-fullscreen__brand {
