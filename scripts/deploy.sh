@@ -83,13 +83,15 @@ run_seed_script() {
     -v "$ROOT/src:/app/src:ro" \
     -v "$ROOT/data:/app/data" \
     -e PROPAL_DB_PATH=/app/data/propal.db \
+    -e SEED_REFRESH_ARTWORK="${SEED_REFRESH_ARTWORK:-}" \
     -w /app \
     "$IMAGE" \
     "$script" "$@"
 }
 
 run_seed_setlist() {
-  log "Seed setlist (titres + Concert) via Docker"
+  log "Seed setlist (titres + Concert + pochettes iTunes) via Docker"
+  # Remplit les vignettes album manquantes (SEED_REFRESH_ARTWORK=1 pour tout rafraîchir)
   run_seed_script scripts/seed-setlist-songs.mjs
   run_seed_script scripts/seed-setlist.mjs
 }
