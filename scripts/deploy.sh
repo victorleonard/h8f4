@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Déploiement VPS (git pull + Docker) avec options de seed SQLite.
+# Déploiement VPS (git pull + Docker) avec menu interactif / options de seed.
 #
 # Usage:
 #   npm run deploy
-#   npm run deploy -- --seed-setlist
+#   ./scripts/deploy.sh
+#   ./scripts/deploy.sh 2          # choix direct
 #   ./scripts/deploy.sh --help
 set -euo pipefail
 
@@ -16,33 +17,33 @@ DO_BUILD=1
 DO_UP=1
 SEED_SETLIST=0
 SEED_PROPAL=0
-SEED_ONLY=0
 DISCARD_GENERATED=1
+CHOICE=""
 
 usage() {
   cat <<'EOF'
 Déploie h8f4 sur le serveur (pull + build + up Docker).
 
 Usage:
-  ./scripts/deploy.sh [options]
-  npm run deploy -- [options]
-
-Options:
-  --seed-setlist       Seed titres + setlist « Concert » après le déploiement
-  --seed-propal        Seed membres Propal après le déploiement
-  --seed-all           Seed setlist + Propal
-  --seed-only          Uniquement les seeds (pas de pull / build / up)
-  --no-pull            Ne pas faire git pull
-  --no-build           Ne pas rebuild l’image Docker
-  --no-up              Ne pas relancer les conteneurs
-  --keep-local         Ne pas écarter live-assets.ts généré avant le pull
-  -h, --help           Afficher cette aide
-
-Exemples:
+  npm run deploy
   ./scripts/deploy.sh
-  ./scripts/deploy.sh --seed-setlist
-  ./scripts/deploy.sh --seed-all
-  ./scripts/deploy.sh --seed-only --seed-setlist
+  ./scripts/deploy.sh <n>          # choix direct (voir menu)
+  ./scripts/deploy.sh --help
+
+Sans argument, un menu numéroté est proposé :
+
+  1) Déployer (pull + build + up)
+  2) Déployer + seed setlist
+  3) Déployer + seed Propal
+  4) Déployer + seed setlist + Propal
+  5) Seed setlist uniquement
+  6) Seed Propal uniquement
+  7) Seed setlist + Propal uniquement
+  0) Annuler
+
+Options avancées :
+  --keep-local   Ne pas écarter live-assets.ts avant le pull
+  -h, --help     Afficher cette aide
 EOF
 }
 
@@ -69,27 +70,89 @@ run_seed_propal() {
   npm run seed:propal-members
 }
 
+apply_choice() {
+  case "$1" in
+    1)
+      DO_PULL=1; DO_BUILD=1; DO_UP=1
+      SEED_SETLIST=0; SEED_PROPAL=0
+      ;;
+    2)
+      DO_PULL=1; DO_BUILD=1; DO_UP=1
+      SEED_SETLIST=1; SEED_PROPAL=0
+      ;;
+    3)
+      DO_PULL=1; DO_BUILD=1; DO_UP=1
+      SEED_SETLIST=0; SEED_PROPAL=1
+      ;;
+    4)
+      DO_PULL=1; DO_BUILD=1; DO_UP=1
+      SEED_SETLIST=1; SEED_PROPAL=1
+      ;;
+    5)
+      DO_PULL=0; DO_BUILD=0; DO_UP=0
+      SEED_SETLIST=1; SEED_PROPAL=0
+      ;;
+    6)
+      DO_PULL=0; DO_BUILD=0; DO_UP=0
+      SEED_SETLIST=0; SEED_PROPAL=1
+      ;;
+    7)
+      DO_PULL=0; DO_BUILD=0; DO_UP=0
+      SEED_SETLIST=1; SEED_PROPAL=1
+      ;;
+    0)
+      echo "Annulé."
+      exit 0
+      ;;
+    *)
+      echo "Choix invalide : $1" >&2
+      exit 1
+      ;;
+  esac
+}
+
+show_menu() {
+  cat <<'EOF'
+
+Déploiement h8f4 — choisis une option :
+
+  1) Déployer (pull + build + up)
+  2) Déployer + seed setlist
+  3) Déployer + seed Propal
+  4) Déployer + seed setlist + Propal
+  5) Seed setlist uniquement
+  6) Seed Propal uniquement
+  7) Seed setlist + Propal uniquement
+  0) Annuler
+
+EOF
+  local answer=""
+  while true; do
+    printf "Ton choix [1-7, 0] : "
+    IFS= read -r answer || true
+    case "$answer" in
+      0|1|2|3|4|5|6|7)
+        CHOICE="$answer"
+        return 0
+        ;;
+      *)
+        echo "Entre un numéro entre 0 et 7."
+        ;;
+    esac
+  done
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --seed-setlist) SEED_SETLIST=1 ;;
-    --seed-propal) SEED_PROPAL=1 ;;
-    --seed-all)
-      SEED_SETLIST=1
-      SEED_PROPAL=1
-      ;;
-    --seed-only)
-      SEED_ONLY=1
-      DO_PULL=0
-      DO_BUILD=0
-      DO_UP=0
-      ;;
-    --no-pull) DO_PULL=0 ;;
-    --no-build) DO_BUILD=0 ;;
-    --no-up) DO_UP=0 ;;
-    --keep-local) DISCARD_GENERATED=0 ;;
     -h|--help)
       usage
       exit 0
+      ;;
+    --keep-local)
+      DISCARD_GENERATED=0
+      ;;
+    [0-7])
+      CHOICE="$1"
       ;;
     *)
       echo "Option inconnue : $1" >&2
@@ -100,12 +163,19 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-if [[ "$SEED_ONLY" -eq 1 && "$SEED_SETLIST" -eq 0 && "$SEED_PROPAL" -eq 0 ]]; then
-  echo "--seed-only nécessite --seed-setlist, --seed-propal ou --seed-all" >&2
-  exit 1
+if [[ -z "$CHOICE" ]]; then
+  if [[ -t 0 ]]; then
+    show_menu
+  else
+    echo "Entrée non interactive : précise un choix (ex. npm run deploy -- 1)" >&2
+    usage >&2
+    exit 1
+  fi
 fi
 
-if [[ "$SEED_ONLY" -eq 0 ]]; then
+apply_choice "$CHOICE"
+
+if [[ "$DO_PULL" -eq 1 || "$DO_BUILD" -eq 1 || "$DO_UP" -eq 1 ]]; then
   require_cmd git
   require_cmd docker
 fi
@@ -113,6 +183,9 @@ fi
 if [[ "$SEED_SETLIST" -eq 1 || "$SEED_PROPAL" -eq 1 ]]; then
   require_cmd npm
 fi
+
+echo
+echo "→ Choix $CHOICE sélectionné"
 
 if [[ "$DO_PULL" -eq 1 ]]; then
   log "Git pull"
@@ -143,7 +216,7 @@ if [[ "$SEED_SETLIST" -eq 1 ]]; then
   run_seed_setlist
 fi
 
-log "Déploiement terminé"
+log "Terminé"
 if [[ "$DO_UP" -eq 1 ]]; then
   docker compose -f "$COMPOSE_FILE" ps
 fi

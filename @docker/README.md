@@ -61,14 +61,26 @@ docker compose -f @docker/docker-compose.yml build
 docker compose -f @docker/docker-compose.yml up -d
 ```
 
-### Options de seed
+### Menu de déploiement
+
+`npm run deploy` propose un menu :
+
+```text
+1) Déployer (pull + build + up)
+2) Déployer + seed setlist
+3) Déployer + seed Propal
+4) Déployer + seed setlist + Propal
+5) Seed setlist uniquement
+6) Seed Propal uniquement
+7) Seed setlist + Propal uniquement
+0) Annuler
+```
+
+Choix direct sans menu :
 
 ```bash
-npm run deploy -- --seed-setlist          # titres + setlist Concert
-npm run deploy -- --seed-propal           # membres Propal
-npm run deploy -- --seed-all              # setlist + Propal
-npm run deploy -- --seed-only --seed-setlist   # seed sans rebuild
-npm run deploy -- --help
+npm run deploy -- 2          # déployer + seed setlist
+npm run deploy -- 5          # seed setlist uniquement
 ```
 
 Le script écarte automatiquement `src/data/live-assets.ts` (fichier généré) avant le `git pull` pour éviter les conflits sur la prod. Utiliser `--keep-local` pour conserver les changements locaux.
