@@ -83,9 +83,9 @@ npm run deploy -- 2          # déployer + seed setlist
 npm run deploy -- 5          # seed setlist uniquement
 ```
 
-Le script écarte automatiquement `src/data/live-assets.ts` (fichier généré) avant le `git pull` pour éviter les conflits sur la prod. Utiliser `--keep-local` pour conserver les changements locaux.
+Le script écarte automatiquement `src/data/live-assets.ts` (et le compose localement modifié) avant le `git pull` pour éviter les conflits sur la prod. Utiliser `--keep-local` pour conserver les changements locaux.
 
-> La base SQLite dans `data/` est persistée via le volume Docker — les propositions et notes survivent aux rebuilds. Les seeds s’exécutent sur l’hôte contre `data/propal.db` (nécessite `npm install` sur le serveur).
+> La base SQLite dans `data/` est persistée via le volume Docker. Les seeds du menu deploy tournent **dans Docker** (image `h8f4-web`) — **npm n’est pas requis** sur le VPS.
 
 ## Reverse proxy (Nginx)
 

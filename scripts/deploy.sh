@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Déploiement VPS (git pull + Docker) avec menu interactif / options de seed.
+# Les seeds tournent dans l’image Docker (pas besoin de npm sur l’hôte).
 #
 # Usage:
+#   bash scripts/deploy.sh
+#   bash scripts/deploy.sh 2
 #   npm run deploy
-#   ./scripts/deploy.sh
-#   ./scripts/deploy.sh 2          # choix direct
-#   ./scripts/deploy.sh --help
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -13,8 +13,8 @@ cd "$ROOT"
 
 COMPOSE_FILE="@docker/docker-compose.yml"
 # --env-file racine : nécessaire pour interpoler HOST_PORT dans ports:
-# (env_file du compose injecte seulement dans le conteneur)
 COMPOSE=(docker compose --env-file .env -f "$COMPOSE_FILE")
+IMAGE="h8f4-web:latest"
 DO_PULL=1
 DO_BUILD=1
 DO_UP=1
@@ -28,10 +28,10 @@ usage() {
 Déploie h8f4 sur le serveur (pull + build + up Docker).
 
 Usage:
+  bash scripts/deploy.sh
+  bash scripts/deploy.sh <n>
   npm run deploy
-  ./scripts/deploy.sh
-  ./scripts/deploy.sh <n>          # choix direct (voir menu)
-  ./scripts/deploy.sh --help
+  npm run deploy -- <n>
 
 Sans argument, un menu numéroté est proposé :
 
@@ -43,6 +43,8 @@ Sans argument, un menu numéroté est proposé :
   6) Seed Propal uniquement
   7) Seed setlist + Propal uniquement
   0) Annuler
+
+Les seeds s’exécutent via Docker (image h8f4-web) — npm n’est pas requis sur l’hôte.
 
 Options avancées :
   --keep-local   Ne pas écarter live-assets.ts avant le pull
@@ -61,16 +63,45 @@ require_cmd() {
   fi
 }
 
-run_seed_setlist() {
-  log "Seed setlist (titres + Concert)"
+ensure_image() {
+  if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+    return 0
+  fi
+  log "Image $IMAGE absente — build..."
+  "${COMPOSE[@]}" build
+}
+
+# Exécute un script Node du repo dans l’image (better-sqlite3 déjà présent).
+run_seed_script() {
+  local script="$1"
+  shift
+  ensure_image
   mkdir -p data
-  npm run seed:setlist
+  docker run --rm \
+    --entrypoint node \
+    -v "$ROOT/scripts:/app/scripts:ro" \
+    -v "$ROOT/src:/app/src:ro" \
+    -v "$ROOT/data:/app/data" \
+    -e PROPAL_DB_PATH=/app/data/propal.db \
+    -w /app \
+    "$IMAGE" \
+    "$script" "$@"
+}
+
+run_seed_setlist() {
+  log "Seed setlist (titres + Concert) via Docker"
+  run_seed_script scripts/seed-setlist-songs.mjs
+  run_seed_script scripts/seed-setlist.mjs
 }
 
 run_seed_propal() {
-  log "Seed membres Propal"
-  mkdir -p data
-  npm run seed:propal-members
+  log "Seed membres Propal via Docker"
+  local members_file="data/propal-members.example.json"
+  if [[ ! -f "$members_file" ]]; then
+    echo "Fichier manquant : $members_file" >&2
+    exit 1
+  fi
+  run_seed_script scripts/seed-propal-members.mjs "$members_file"
 }
 
 apply_choice() {
@@ -170,7 +201,7 @@ if [[ -z "$CHOICE" ]]; then
   if [[ -t 0 ]]; then
     show_menu
   else
-    echo "Entrée non interactive : précise un choix (ex. npm run deploy -- 1)" >&2
+    echo "Entrée non interactive : précise un choix (ex. bash scripts/deploy.sh 1)" >&2
     usage >&2
     exit 1
   fi
@@ -178,13 +209,9 @@ fi
 
 apply_choice "$CHOICE"
 
-if [[ "$DO_PULL" -eq 1 || "$DO_BUILD" -eq 1 || "$DO_UP" -eq 1 ]]; then
+require_cmd docker
+if [[ "$DO_PULL" -eq 1 ]]; then
   require_cmd git
-  require_cmd docker
-fi
-
-if [[ "$SEED_SETLIST" -eq 1 || "$SEED_PROPAL" -eq 1 ]]; then
-  require_cmd npm
 fi
 
 echo
@@ -193,9 +220,9 @@ echo "→ Choix $CHOICE sélectionné"
 if [[ "$DO_PULL" -eq 1 ]]; then
   log "Git pull"
   if [[ "$DISCARD_GENERATED" -eq 1 ]]; then
-    # Fichier régénéré au build — évite le blocage du pull sur la prod.
     if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       git restore --worktree --staged -- "src/data/live-assets.ts" 2>/dev/null || true
+      git restore --worktree --staged -- "@docker/docker-compose.yml" 2>/dev/null || true
     fi
   fi
   git pull --ff-only
