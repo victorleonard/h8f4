@@ -74,42 +74,25 @@ function formatDurationSummary(totalSeconds: number): string {
 function formatEstimateSummary(items: SetlistItem[]): string {
   const summary = summarizeSetlistDurations(items);
   const songCount = items.filter((item) => item.kind === "song").length;
-  const multiSet = summary.groups.length > 1;
   const hasPauses = summary.pauseDurationSeconds > 0;
 
-  const primary: string[] = [];
+  const parts: string[] = [];
   if (songCount > 0) {
-    primary.push(`${songCount} titre${songCount > 1 ? "s" : ""}`);
+    parts.push(`${songCount} titre${songCount > 1 ? "s" : ""}`);
   }
-  primary.push(
+  parts.push(
     `Jeu&nbsp;: <strong class="text-text">${escapeHtml(formatDurationSummary(summary.estimatedDurationSeconds))}</strong>`,
   );
-
-  const chunks: string[] = [
-    `<span class="setlist-duration-stats__line">${primary.join(" · ")}</span>`,
-  ];
-
-  if (multiSet) {
-    const rows = summary.groups
-      .map(
-        (group) => `
-        <li class="setlist-duration-stats__set">
-          <span class="setlist-duration-stats__set-label">${escapeHtml(group.label)}</span>
-          <span class="setlist-duration-stats__set-value"><strong class="text-text">${escapeHtml(formatDurationSummary(group.durationSeconds))}</strong></span>
-          <span class="setlist-duration-stats__set-meta">${group.songCount} titre${group.songCount > 1 ? "s" : ""}</span>
-        </li>`,
-      )
-      .join("");
-    chunks.push(`<ul class="setlist-duration-stats__sets">${rows}</ul>`);
-  }
-
   if (hasPauses) {
-    chunks.push(
-      `<span class="setlist-duration-stats__line setlist-duration-stats__line--secondary">Pauses&nbsp;: <strong class="text-text">${escapeHtml(formatDurationSummary(summary.pauseDurationSeconds))}</strong> · Total&nbsp;: <strong class="text-text">${escapeHtml(formatDurationSummary(summary.estimatedTotalSeconds))}</strong></span>`,
+    parts.push(
+      `Pauses&nbsp;: <strong class="text-text">${escapeHtml(formatDurationSummary(summary.pauseDurationSeconds))}</strong>`,
+    );
+    parts.push(
+      `Total&nbsp;: <strong class="text-text">${escapeHtml(formatDurationSummary(summary.estimatedTotalSeconds))}</strong>`,
     );
   }
 
-  return `<div class="setlist-duration-stats">${chunks.join("")}</div>`;
+  return `<div class="setlist-duration-stats"><span class="setlist-duration-stats__line">${parts.join(" · ")}</span></div>`;
 }
 
 const SEARCH_DEBOUNCE_MS = 350;
@@ -974,7 +957,7 @@ function initDetailPage(root: HTMLElement): void {
           chunks.push(`
             <div class="setlist-group-header" aria-hidden="true">
               <span class="setlist-group-header__label">${escapeHtml(group.label)}</span>
-              <span>${escapeHtml(formatDuration(group.durationSeconds))} · ${group.songCount} titre${group.songCount > 1 ? "s" : ""}</span>
+              <span>${escapeHtml(formatDurationSummary(group.durationSeconds))} · ${group.songCount} titre${group.songCount > 1 ? "s" : ""}</span>
             </div>
           `);
           groupIndex += 1;
@@ -1125,14 +1108,6 @@ function initDetailPage(root: HTMLElement): void {
     const estimateLines = [
       `${setlist.songs.length} titre${setlist.songs.length > 1 ? "s" : ""} · Jeu : ${formatDurationSummary(summary.estimatedDurationSeconds)}`,
     ];
-    if (summary.groups.length > 1) {
-      estimateLines.push(
-        ...summary.groups.map(
-          (group) =>
-            `${group.label} : ${formatDurationSummary(group.durationSeconds)} (${group.songCount} titre${group.songCount > 1 ? "s" : ""})`,
-        ),
-      );
-    }
     if (summary.pauseDurationSeconds > 0) {
       estimateLines.push(
         `Pauses : ${formatDurationSummary(summary.pauseDurationSeconds)} · Total : ${formatDurationSummary(summary.estimatedTotalSeconds)}`,
