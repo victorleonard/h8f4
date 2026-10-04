@@ -1,11 +1,9 @@
-# Interpolation (${HOST_PORT}, etc.) : passer le .env racine explicitement
-#   docker compose --env-file .env -f @docker/docker-compose.yml up -d
-# (env_file: ci-dessous injecte dans le conteneur, pas pour le mapping des ports)
+# Interpolation HOST_PORT: docker compose --env-file .env -f @docker/docker-compose.yml up -d
 services:
   web:
     build:
       context: ..
-      dockerfile: @docker/Dockerfile
+      dockerfile: "@docker/Dockerfile"
       args:
         PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-https://h8f4.fr}
         PUBLIC_BASE_PATH: ${PUBLIC_BASE_PATH:-}
